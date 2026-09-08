@@ -10,6 +10,7 @@ import {
   aDataUrl, actualYSimulacion, descargar, precargarLogo, reducir, soloSimulacion,
 } from "@/lib/simulador/entrega";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
+import { GRADOS, type Grado } from "@/lib/simulador/grado";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
@@ -35,6 +36,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [original, setOriginal] = useState<string | null>(null);
   const [resultado, setResultado] = useState<string | null>(null);
   const [entregas, setEntregas] = useState<Entrega[]>([]);
+  const [grado, setGrado] = useState<Grado | null>(null);
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
   const [simulacionId, setSimulacionId] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const correoOk = CORREO.test(correo.trim());
   const vambeOk = /^https?:\/\/\S+$/.test(vambe.trim());
   const datosListos = correoOk && vambeOk;
+  const listoParaGenerar = !!grado && datosListos;
 
   const cargar = useCallback(async (file: File) => {
     setError(null);
@@ -76,6 +79,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       }
       fotoRef.current = img;
       setOriginal(aDataUrl(reducir(img)));
+      setGrado(null);
       setResultado(null);
       setEntregas([]);
       setEstado("listo");
@@ -89,7 +93,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
   const generar = useCallback(async () => {
     const img = fotoRef.current;
-    if (!original || !img) return;
+    if (!original || !img || !grado) return;
     setEstado("generando");
     setError(null);
     try {
@@ -109,6 +113,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
         body: JSON.stringify({
           cabeza: c.toDataURL("image/jpeg", 0.95),
           original,
+          grado,
           correo: correo.trim(),
           vambe: vambe.trim(),
         }),
@@ -160,7 +165,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       setError(e instanceof Error ? e.message : "No se pudo generar la simulación.");
       setEstado("error");
     }
-  }, [original, correo, vambe, consumo]);
+  }, [original, grado, correo, vambe, consumo]);
 
   const copiarEnlace = async () => {
     if (!enlace) return;
@@ -175,6 +180,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setResultado(null);
     setEntregas([]);
     setError(null);
+    setGrado(null);
     setCorreo("");
     setVambe("");
     setSimulacionId(null);
@@ -193,7 +199,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     else descargar(actualYSimulacion(f.actual, f.simulacion), `${base}-comparativa.jpg`);
   };
 
-  const paso = !original ? 1 : !datosListos ? 2 : estado === "hecho" ? 3 : 2;
+  const paso = !original ? 1 : !grado ? 2 : !datosListos ? 3 : 4;
 
   return (
     <>
@@ -320,7 +326,41 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                 )}
               </Paso>
 
-              <Paso n={2} activo={paso === 2} hecho={datosListos} texto="Datos del paciente">
+              {/* El grado va aquí y no junto a los datos del paciente: es una propiedad
+                  del caso y se elige mirando la fotografía, que está al lado. */}
+              <Paso n={2} activo={paso === 2} hecho={!!grado} texto="Grado del caso">
+                <div className="mt-2.5 space-y-1.5" role="radiogroup" aria-label="Grado del caso">
+                  {GRADOS.map((g) => {
+                    const puesto = grado === g.valor;
+                    return (
+                      <button
+                        key={g.valor}
+                        type="button"
+                        role="radio"
+                        aria-checked={puesto}
+                        onClick={() => setGrado(g.valor)}
+                        disabled={estado === "generando"}
+                        className={`block w-full rounded-[var(--crm-r-md)] px-3.5 py-2.5 text-left transition-colors ${
+                          puesto
+                            ? "bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
+                            : "bg-[var(--crm-surface-3)] text-[var(--crm-ink)] hover:bg-[var(--crm-accent-tint)]"
+                        }`}
+                      >
+                        <span className="block text-[13.5px]">{g.titulo}</span>
+                        <span
+                          className={`mt-0.5 block text-[12px] leading-snug ${
+                            puesto ? "text-[var(--crm-on-accent)]/75" : "text-[var(--crm-ink-mute)]"
+                          }`}
+                        >
+                          {g.pie}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Paso>
+
+              <Paso n={3} activo={paso === 3} hecho={datosListos} texto="Datos del paciente">
                 <div className="mt-2.5 space-y-2.5">
                   <input
                     id="correo"
@@ -349,7 +389,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                 </div>
               </Paso>
 
-              <Paso n={3} activo={paso === 3} hecho={false} texto="Generar y enviar el enlace" />
+              <Paso n={4} activo={paso === 4} hecho={false} texto="Generar y enviar el enlace" />
             </ol>
           )}
 
@@ -373,7 +413,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
             {estado !== "generando" && estado !== "hecho" && original && (
               <button
                 onClick={generar}
-                disabled={!datosListos || agotado}
+                disabled={!listoParaGenerar || agotado}
                 className="crm-btn crm-btn-primary w-full justify-center"
               >
                 <Sparkles className="size-4" /> Generar simulación
