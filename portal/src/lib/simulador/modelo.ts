@@ -47,7 +47,7 @@ export const PROMPTS: Record<Grado, string> = {
 
   medio: `Acerca las orejas de esta persona a la cabeza con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe reducirse de forma notable: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos un tercio. El contorno de la cabeza queda casi como una curva continua de la sien a la mandíbula, con el borde de la oreja asomando apenas. Si la oreja sigue tan abierta como en el original, está mal: métela más. ${EJE} ${COLA}`,
 
-  bajo: `Pega las orejas de esta persona al cráneo con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe quedar marcado por el cráneo y no por las orejas, y el contorno de la cabeza tiene que ser una curva continua de la sien a la mandíbula. De la oreja, como mucho, se insinúa el borde pegado a la cabeza. Si todavía se distingue una oreja abierta por fuera de esa curva, está mal: métela más. ${EJE} ${COLA}`,
+  bajo: `Pega las orejas de esta persona completamente al cráneo con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho lo marca el cráneo, nunca las orejas. El contorno de la cabeza tiene que ser una curva continua y limpia de la sien a la mandíbula, sin ningún saliente. La oreja queda plana contra la cabeza, sin hueco ni sombra entre el borde de la oreja y el cráneo. Si al terminar todavía se distingue el borde de una oreja por fuera de esa curva, está mal: métela más, hasta que no sobresalga nada. ${EJE} ${COLA}`,
 };
 
 type Prediccion = {
