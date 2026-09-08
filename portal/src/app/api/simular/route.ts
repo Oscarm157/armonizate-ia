@@ -7,6 +7,7 @@ import { prospectos, simulaciones } from "@/lib/schema";
 import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 import { consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
+import { nuevoToken, venceEn } from "@/lib/enlace";
 import { serverEnv } from "@/lib/env";
 import { parseJson } from "@/lib/validate";
 import { generar, MODELO } from "@/lib/simulador/modelo";
@@ -21,7 +22,8 @@ const bodySchema = z.object({
   cabeza: z.string().regex(DATA_URL, "Imagen inválida."),
   // foto completa tal como la subió el vendedor, es lo que se guarda
   original: z.string().regex(DATA_URL, "Imagen inválida."),
-  prospectoTelefono: z.string().trim().min(7, "Falta el celular del prospecto.").max(25),
+  correo: z.string().trim().email("Correo inválido.").max(120),
+  vambe: z.string().trim().url("El enlace de Vambe no es válido.").max(400),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -49,14 +51,17 @@ export async function POST(request: Request) {
   try {
     datos = await parseJson(bodySchema, request);
   } catch {
-    return NextResponse.json({ error: "Revisa la foto y el celular del prospecto." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Revise la fotografía, el correo y el enlace de Vambe." },
+      { status: 400 }
+    );
   }
 
   // El tope se verifica ANTES de llamar al modelo: pasado el límite no se gasta.
   const usadas = await consumoDelMes(me.id);
   if (usadas >= TOPE_MENSUAL) {
     return NextResponse.json(
-      { error: `Llegaste a tu tope de ${TOPE_MENSUAL} simulaciones este mes.`, usadas, tope: TOPE_MENSUAL },
+      { error: `Alcanzó el límite de ${TOPE_MENSUAL} simulaciones de este mes.`, usadas, tope: TOPE_MENSUAL },
       { status: 429 }
     );
   }
@@ -75,10 +80,12 @@ export async function POST(request: Request) {
 
   // El prospecto se crea la primera vez que se le genera algo. La sede sale del
   // vendedor, que es de donde después salen los números por plaza.
+  const correo = datos.correo.toLowerCase();
+
   await db
     .insert(prospectos)
-    .values({ telefono: datos.prospectoTelefono, sede: me.sede, userId: me.id })
-    .onConflictDoNothing();
+    .values({ correo, vambe: datos.vambe, sede: me.sede, userId: me.id })
+    .onConflictDoUpdate({ target: prospectos.correo, set: { vambe: datos.vambe } });
 
   // La fila se crea antes de llamar al modelo: lo que consume cuota es haber pedido la
   // generación, no haberla terminado.
@@ -86,19 +93,24 @@ export async function POST(request: Request) {
     .insert(simulaciones)
     .values({
       userId: me.id,
-      prospectoTelefono: datos.prospectoTelefono,
+      prospectoCorreo: correo,
+      prospectoVambe: datos.vambe,
       sede: me.sede,
       modelo: MODELO,
       antesUrl: antes.url,
       antesPathname: antes.pathname,
+      // El enlace nace con la simulación: es lo que se le manda al paciente.
+      token: nuevoToken(),
+      expiraEn: venceEn(),
     })
-    .returning({ id: simulaciones.id });
+    .returning({ id: simulaciones.id, token: simulaciones.token });
 
   const res = await generar(datos.cabeza, REPLICATE_API_TOKEN);
   if ("error" in res) return NextResponse.json({ error: res.error, id: fila.id }, { status: 502 });
 
   return NextResponse.json({
     id: fila.id,
+    token: fila.token,
     imagen: `data:image/jpeg;base64,${res.base64}`,
     usadas: usadas + 1,
     tope: TOPE_MENSUAL,
