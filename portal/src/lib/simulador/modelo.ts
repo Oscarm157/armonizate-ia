@@ -11,6 +11,13 @@ const API = "https://api.replicate.com/v1";
 export const MODELO = "google/nano-banana-2";
 
 /**
+ * La oreja solo se acerca al cráneo. Sin esta restricción de eje, en fotos donde la
+ * oreja casi no asoma el modelo la redibuja y la corre de altura en vez de pegarla:
+ * inventa lo que tiene que corregir.
+ */
+const EJE = `La oreja únicamente se acerca al cráneo: queda a la misma altura, del mismo tamaño y con la misma forma que en el original. No la subas ni la bajes, no la agrandes, no la redibujes y no la dibujes donde el pelo la tapa.`;
+
+/**
  * Lo que no cambia entre grados: es lo que impide que el modelo aproveche el viaje para
  * suavizar la piel, redibujar las cejas o reencuadrar.
  */
@@ -30,16 +37,18 @@ const COLA = `Todo lo demás queda exactamente igual: mismo rostro y facciones, 
  * - Darle pares antes/después de la clínica como referencia visual empeora el
  *   resultado: el modelo se confunde sobre cuál imagen editar.
  *
- * El de grado bajo es el texto que estuvo en producción, copiado sin tocar una coma.
- * Su resultado (oreja prácticamente pegada) es el correcto para este grado; comparado
- * contra los casos reales de la clínica, era el error en los otros dos.
+ * Ninguno afirma cuánto sobresale la oreja en esta foto concreta. El texto que estuvo en
+ * producción abría con "tiene las orejas muy separadas de la cabeza", y en una foto donde
+ * no lo están el modelo se inventaba una oreja abierta para poder corregirla: la
+ * redibujaba y la corría de altura. La severidad la fija el grado, no una afirmación
+ * sobre la fotografía.
  */
 export const PROMPTS: Record<Grado, string> = {
-  alto: `Esta persona tiene las orejas muy separadas de la cabeza. Aplícale una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En la foto original ese ancho lo marcan las orejas abiertas. En tu resultado ese ancho debe reducirse de forma clara: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos la mitad. La oreja queda recogida hacia atrás y sigue viéndose por fuera del contorno del cráneo, mucho menos abierta que en el original. Si la oreja quedó invisible de frente o escondida detrás de la cabeza, está mal: es demasiada corrección. Si sigue tan abierta como en el original, también está mal: métela más. ${COLA}`,
+  alto: `Acerca las orejas de esta persona a la cabeza con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe reducirse de forma clara: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos la mitad. La oreja queda recogida hacia atrás y sigue viéndose por fuera del contorno del cráneo, mucho menos abierta que en el original. Si la oreja quedó invisible de frente o escondida detrás de la cabeza, está mal: es demasiada corrección. Si sigue tan abierta como en el original, también está mal: métela más. ${EJE} ${COLA}`,
 
-  medio: `Esta persona tiene las orejas separadas de la cabeza. Aplícale una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En la foto original ese ancho lo marcan las orejas abiertas. En tu resultado ese ancho debe reducirse de forma notable: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos un tercio. El contorno de la cabeza queda casi como una curva continua de la sien a la mandíbula, con el borde de la oreja asomando apenas. Si la oreja sigue tan abierta como en el original, está mal: métela más. ${COLA}`,
+  medio: `Acerca las orejas de esta persona a la cabeza con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe reducirse de forma notable: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos un tercio. El contorno de la cabeza queda casi como una curva continua de la sien a la mandíbula, con el borde de la oreja asomando apenas. Si la oreja sigue tan abierta como en el original, está mal: métela más. ${EJE} ${COLA}`,
 
-  bajo: `Esta persona tiene las orejas muy separadas de la cabeza. Aplícale una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En la foto original ese ancho lo marcan las orejas abiertas. En tu resultado ese ancho debe reducirse de forma notable y quedar marcado por el cráneo, no por las orejas. El contorno de la cabeza tiene que ser una curva continua de la sien a la mandíbula, sin nada sobresaliendo a los lados. Si al terminar todavía se distingue el borde de una oreja por fuera de esa curva, está mal: métela más. ${COLA}`,
+  bajo: `Pega las orejas de esta persona al cráneo con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe quedar marcado por el cráneo y no por las orejas, y el contorno de la cabeza tiene que ser una curva continua de la sien a la mandíbula. De la oreja, como mucho, se insinúa el borde pegado a la cabeza. Si todavía se distingue una oreja abierta por fuera de esa curva, está mal: métela más. ${EJE} ${COLA}`,
 };
 
 type Prediccion = {
