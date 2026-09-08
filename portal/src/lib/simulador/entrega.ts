@@ -14,6 +14,22 @@ const AVISO = "Simulación generada con inteligencia artificial · El resultado 
 const INDIGO = "#4D4E93";
 
 let logo: HTMLImageElement | null = null;
+let familiaCache: string | null = null;
+
+/**
+ * La familia tipográfica real del documento.
+ *
+ * En canvas hay que nombrar la fuente, y next/font no la expone como "Poppins" sino
+ * con un nombre generado. Escribir "Poppins" en ctx.font caía al tipo del sistema, que
+ * es justo lo que se veía mal en el pie de las imágenes.
+ */
+function familia(): string {
+  if (!familiaCache) {
+    familiaCache =
+      getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
+  }
+  return familiaCache;
+}
 
 /** El logo se carga una vez y se reusa; sin él las imágenes salen igual, sin marca. */
 export async function precargarLogo(): Promise<void> {
@@ -61,16 +77,16 @@ function pintarPie(ctx: CanvasRenderingContext2D, ancho: number, y: number, alto
 
   // Logo centrado y con presencia: la imagen se reenvía por WhatsApp y funciona como
   // pieza de la clínica, no solo como entrega técnica.
-  const blanco = logoEnBlanco(alto * 0.42);
-  if (blanco) ctx.drawImage(blanco, centro - blanco.width / 2, y + alto * 0.16);
+  const blanco = logoEnBlanco(alto * 0.34);
+  if (blanco) ctx.drawImage(blanco, centro - blanco.width / 2, y + alto * 0.22);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = `500 ${Math.round(alto * 0.17)}px Poppins, Montserrat, system-ui, sans-serif`;
-  ctx.fillText(SITIO, centro, y + alto * 0.71, ancho * 0.9);
+  ctx.font = `500 ${Math.round(alto * 0.13)}px ${familia()}`;
+  ctx.fillText(SITIO, centro, y + alto * 0.72, ancho * 0.9);
 
   ctx.fillStyle = "rgba(255,255,255,0.62)";
-  ctx.font = `400 ${Math.round(alto * 0.115)}px Poppins, Montserrat, system-ui, sans-serif`;
-  ctx.fillText(AVISO, centro, y + alto * 0.89, ancho * 0.94);
+  ctx.font = `400 ${Math.round(alto * 0.082)}px ${familia()}`;
+  ctx.fillText(AVISO, centro, y + alto * 0.87, ancho * 0.94);
 }
 
 function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number, y: number, ancho: number) {
@@ -81,7 +97,7 @@ function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number,
   ctx.roundRect(x + ancho * 0.035, y + ancho * 0.035, anchoCaja, alto, alto / 2);
   ctx.fill();
   ctx.fillStyle = INDIGO;
-  ctx.font = `600 ${Math.round(alto * 0.44)}px Poppins, Montserrat, system-ui, sans-serif`;
+  ctx.font = `600 ${Math.round(alto * 0.44)}px ${familia()}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(texto, x + ancho * 0.035 + anchoCaja / 2, y + ancho * 0.035 + alto / 2);
@@ -89,7 +105,7 @@ function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number,
 
 /** Solo la simulación, con logo y aviso al pie. */
 export function soloSimulacion(simulacion: HTMLCanvasElement): HTMLCanvasElement {
-  const pie = Math.round(simulacion.width * 0.26);
+  const pie = Math.round(simulacion.width * 0.42);
   const [c, ctx] = lienzo(simulacion.width, simulacion.height + pie);
   ctx.drawImage(simulacion, 0, 0);
   pintarPie(ctx, c.width, simulacion.height, pie);
@@ -104,7 +120,7 @@ export function actualYSimulacion(
   const w = simulacion.width;
   const h = simulacion.height;
   const sep = Math.round(w * 0.018);
-  const pie = Math.round(w * 0.15);
+  const pie = Math.round(w * 0.44);
 
   const [c, ctx] = lienzo(w * 2 + sep, h + pie);
   ctx.fillStyle = INDIGO;

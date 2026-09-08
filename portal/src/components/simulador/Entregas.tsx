@@ -25,7 +25,7 @@ export function Entregas({
     <>
       <div>
         <p className="crm-eyebrow mb-3">Material para el paciente</p>
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           {entregas.map((e) => (
             <div
               key={e.clave}
@@ -43,7 +43,7 @@ export function Entregas({
                   <Maximize2 className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
                 </span>
               </button>
-              <div className="px-3.5 py-3">
+              <div className="px-4 py-4">
                 <p className="text-[13.5px] font-semibold text-[var(--crm-ink)]">{e.titulo}</p>
                 <p className="mt-0.5 text-[12px] text-[var(--crm-ink-mute)]">{e.pie}</p>
                 <button

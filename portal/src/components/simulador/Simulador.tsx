@@ -175,11 +175,11 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     <>
       {/* Una sola mesa de trabajo: la fotografía y el control comparten superficie.
           Dos cajas sueltas lado a lado se leían como formulario de plantilla. */}
-      <div className="crm-mesa grid overflow-hidden lg:grid-cols-[1fr_360px]">
+      <div className="crm-mesa grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_340px] lg:gap-12 lg:p-10">
         {/* Fotografía */}
         <div className="relative">
           <div
-            className={`relative w-full overflow-hidden ${
+            className={`relative w-full overflow-hidden rounded-[var(--crm-r-md)] ${
               original
                 ? "aspect-[4/5] max-h-[46dvh] bg-[var(--crm-surface-3)] lg:max-h-[560px]"
                 : "aspect-[5/4] max-h-[34dvh] bg-[var(--crm-accent)] lg:max-h-[420px]"
@@ -248,7 +248,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
           </div>
 
           {estado === "hecho" && (
-            <div className="flex flex-col items-center gap-3 px-5 py-4">
+            <div className="flex flex-col items-center gap-4 pt-5">
               <p className="text-[12.5px] text-[var(--crm-ink-mute)]">Deslice el control para comparar</p>
               {simulacionId && (
                 <Calificar valor={null} onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
@@ -259,11 +259,11 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
         {/* Control. Terminada la simulación, aquí manda el material: si se dejaran los
             pasos ya cumplidos, lo que el asesor necesita quedaría bajo el pliegue. */}
-        <div className="border-t border-[var(--crm-line)] p-6 sm:p-7 lg:border-t-0 lg:border-l">
+        <div className="border-t border-[var(--crm-line)] pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-12">
           {estado === "hecho" && entregas.length > 0 ? (
             <Entregas entregas={entregas} onDescargar={bajar} />
           ) : (
-            <ol className="space-y-4">
+            <ol className="space-y-6">
               <Paso n={1} activo={paso === 1} hecho={!!original} texto="Fotografía">
                 {!original && (
                   <ul className="mt-2 space-y-1">
@@ -308,7 +308,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
             </p>
           )}
 
-          <div className="mt-6 flex flex-col gap-2.5">
+          <div className="mt-8 flex flex-col gap-3">
             {estado !== "generando" && estado !== "hecho" && original && (
               <button
                 onClick={generar}
@@ -348,7 +348,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-1.5 px-1 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
+      <div className="mt-7 flex flex-col gap-2 px-1 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
         <p>
           Ambas imágenes se entregan con el aviso impreso de que son una simulación y de que el
           resultado final puede variar.
