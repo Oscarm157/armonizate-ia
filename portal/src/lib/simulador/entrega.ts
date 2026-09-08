@@ -8,12 +8,10 @@
 
 import { cargarImagen } from "./landmarks";
 
-const AVISO_1 = "Simulación generada con inteligencia artificial";
-const AVISO_2 = "El resultado final puede variar";
+const SITIO = "clinicaarmonizate.mx";
+const AVISO = "Simulación generada con inteligencia artificial · El resultado final puede variar";
 
-const TINTA = "#121333";
-const INDIGO = "#4c4e98";
-const LAVANDA = "#eae7f3";
+const INDIGO = "#4D4E93";
 
 let logo: HTMLImageElement | null = null;
 
@@ -37,41 +35,53 @@ function lienzo(ancho: number, alto: number): [HTMLCanvasElement, CanvasRenderin
   return [c, ctx];
 }
 
-/** Pie de la imagen: logo a la izquierda, aviso a la derecha, sobre el lavanda. */
+/**
+ * Pie de la imagen: logo a la izquierda y aviso a la derecha, sobre el índigo de la
+ * marca. El logo del archivo es negro, así que se repinta en blanco conservando su
+ * silueta: sobre el índigo el original no se vería.
+ */
+function logoEnBlanco(altoLogo: number): HTMLCanvasElement | null {
+  if (!logo) return null;
+  const anchoLogo = Math.round((logo.naturalWidth / logo.naturalHeight) * altoLogo);
+  const [c, ctx] = lienzo(anchoLogo, Math.round(altoLogo));
+  ctx.drawImage(logo, 0, 0, anchoLogo, altoLogo);
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, anchoLogo, altoLogo);
+  return c;
+}
+
 function pintarPie(ctx: CanvasRenderingContext2D, ancho: number, y: number, alto: number) {
-  ctx.fillStyle = LAVANDA;
+  ctx.fillStyle = INDIGO;
   ctx.fillRect(0, y, ancho, alto);
 
-  const margen = alto * 0.28;
-  let x = margen;
-
-  if (logo) {
-    const altoLogo = alto * 0.44;
-    const anchoLogo = (logo.naturalWidth / logo.naturalHeight) * altoLogo;
-    ctx.drawImage(logo, x, y + (alto - altoLogo) / 2, anchoLogo, altoLogo);
-    x += anchoLogo + margen;
-  }
-
-  ctx.fillStyle = TINTA;
-  ctx.textAlign = "right";
+  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const cuerpo = Math.round(alto * 0.2);
-  ctx.font = `600 ${cuerpo}px Montserrat, system-ui, sans-serif`;
-  ctx.fillText(AVISO_1, ancho - margen, y + alto * 0.37, ancho - x - margen);
-  ctx.font = `400 ${cuerpo}px Montserrat, system-ui, sans-serif`;
-  ctx.fillStyle = "#4a4a63";
-  ctx.fillText(AVISO_2, ancho - margen, y + alto * 0.65, ancho - x - margen);
+  const centro = ancho / 2;
+
+  // Logo centrado y con presencia: la imagen se reenvía por WhatsApp y funciona como
+  // pieza de la clínica, no solo como entrega técnica.
+  const blanco = logoEnBlanco(alto * 0.42);
+  if (blanco) ctx.drawImage(blanco, centro - blanco.width / 2, y + alto * 0.16);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `500 ${Math.round(alto * 0.17)}px Poppins, Montserrat, system-ui, sans-serif`;
+  ctx.fillText(SITIO, centro, y + alto * 0.71, ancho * 0.9);
+
+  ctx.fillStyle = "rgba(255,255,255,0.62)";
+  ctx.font = `400 ${Math.round(alto * 0.115)}px Poppins, Montserrat, system-ui, sans-serif`;
+  ctx.fillText(AVISO, centro, y + alto * 0.89, ancho * 0.94);
 }
 
 function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number, y: number, ancho: number) {
   const alto = Math.round(ancho * 0.072);
   const anchoCaja = ancho * 0.32;
-  ctx.fillStyle = INDIGO;
+  ctx.fillStyle = "#ffffff";
   ctx.beginPath();
   ctx.roundRect(x + ancho * 0.035, y + ancho * 0.035, anchoCaja, alto, alto / 2);
   ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.font = `600 ${Math.round(alto * 0.44)}px Montserrat, system-ui, sans-serif`;
+  ctx.fillStyle = INDIGO;
+  ctx.font = `600 ${Math.round(alto * 0.44)}px Poppins, Montserrat, system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(texto, x + ancho * 0.035 + anchoCaja / 2, y + ancho * 0.035 + alto / 2);
@@ -79,7 +89,7 @@ function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number,
 
 /** Solo la simulación, con logo y aviso al pie. */
 export function soloSimulacion(simulacion: HTMLCanvasElement): HTMLCanvasElement {
-  const pie = Math.round(simulacion.width * 0.13);
+  const pie = Math.round(simulacion.width * 0.26);
   const [c, ctx] = lienzo(simulacion.width, simulacion.height + pie);
   ctx.drawImage(simulacion, 0, 0);
   pintarPie(ctx, c.width, simulacion.height, pie);
@@ -94,10 +104,10 @@ export function actualYSimulacion(
   const w = simulacion.width;
   const h = simulacion.height;
   const sep = Math.round(w * 0.018);
-  const pie = Math.round(w * 0.115);
+  const pie = Math.round(w * 0.15);
 
   const [c, ctx] = lienzo(w * 2 + sep, h + pie);
-  ctx.fillStyle = LAVANDA;
+  ctx.fillStyle = INDIGO;
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(actual, 0, 0, w, h);
   ctx.drawImage(simulacion, w + sep, 0, w, h);
