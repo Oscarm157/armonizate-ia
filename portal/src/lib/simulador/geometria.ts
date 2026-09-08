@@ -15,7 +15,12 @@ const MARGEN_CABEZA = 1.9;
 const FUERA = 0.44; // hacia afuera del borde de la cara: cubre la oreja separada
 const DENTRO = 0.14; // hacia dentro: cubre la raíz de la oreja
 const ARRIBA = 0.09; // por encima de la ceja
-const ABAJO = 0.05; // por debajo de la base de la nariz; más abajo invade la barba
+// Por debajo de la base de la nariz. Estuvo en 0.05 y dejaba el lóbulo fuera de la
+// banda: la composición pegaba la oreja corregida arriba y conservaba la original
+// abajo, y el resultado parecía una oreja movida de altura en vez de una pegada. Se
+// vio dibujando la banda sobre las fotos: con 0.22 el pabellón entra completo en los
+// once casos y la elipse todavía no alcanza la mandíbula ni la barba.
+const ABAJO = 0.22;
 
 export type Caja = { x: number; y: number; lado: number };
 

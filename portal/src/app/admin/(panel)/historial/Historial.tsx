@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, ExternalLink, Link2, Maximize2, RotateCw, X } from "lucide-react";
+import { Check, Copy, ExternalLink, Link2, Maximize2, RotateCw, X } from "lucide-react";
 import { Modal } from "@/components/crm/Modal";
 import { fmtDate } from "@/lib/crm-format";
 import { Calificar } from "@/components/simulador/Calificar";
@@ -59,6 +59,7 @@ function Tarjeta({
   const [resultado, setResultado] = useState(prospecto.resultado);
   const [pendiente, iniciar] = useTransition();
   const [copiado, setCopiado] = useState(false);
+  const [folioCopiado, setFolioCopiado] = useState(false);
   const ultima = prospecto.simulaciones[0];
   const et = ETIQUETA[resultado];
   const vigente = !!ultima.expiraEn && new Date(ultima.expiraEn) > new Date();
@@ -77,6 +78,12 @@ function Tarjeta({
     await navigator.clipboard.writeText(`${location.origin}/s/${ultima.token}`);
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
+  };
+
+  const copiarFolio = async () => {
+    await navigator.clipboard.writeText(ultima.id);
+    setFolioCopiado(true);
+    setTimeout(() => setFolioCopiado(false), 2000);
   };
 
   return (
@@ -119,6 +126,16 @@ function Tarjeta({
           <span className="crm-num">{fmtDate(ultima.creadoEn)}</span>
           {prospecto.asesor && <span className="truncate">· {prospecto.asesor}</span>}
         </p>
+
+        {/* El folio identifica la generación cuando hay que hablar de una en concreto. */}
+        <button
+          onClick={copiarFolio}
+          title="Copiar el folio de esta simulación"
+          className="crm-num mt-2 flex w-full items-center gap-1.5 truncate text-left text-[11.5px] text-[var(--crm-ink-faint)] hover:text-[var(--crm-ink-mute)]"
+        >
+          <Copy className="size-3 shrink-0" />
+          <span className="truncate">{folioCopiado ? "Folio copiado" : ultima.id}</span>
+        </button>
 
         {prospecto.vambe && (
           <a

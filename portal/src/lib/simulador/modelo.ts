@@ -11,11 +11,10 @@ const API = "https://api.replicate.com/v1";
 export const MODELO = "google/nano-banana-2";
 
 /**
- * La oreja solo se acerca al cráneo. Sin esta restricción de eje, en fotos donde la
- * oreja casi no asoma el modelo la redibuja y la corre de altura en vez de pegarla:
- * inventa lo que tiene que corregir.
+ * La oreja se mueve solo hacia el cráneo. No dice nada de conservar su tamaño ni su
+ * forma a propósito: pedir eso frena la corrección hasta dejarla en nada.
  */
-const EJE = `La oreja únicamente se acerca al cráneo: queda a la misma altura, del mismo tamaño y con la misma forma que en el original. No la subas ni la bajes, no la agrandes, no la redibujes y no la dibujes donde el pelo la tapa.`;
+const EJE = `La oreja se mueve solo hacia el cráneo, nunca hacia arriba ni hacia abajo, y no aparece ninguna oreja donde el pelo la tapaba.`;
 
 /**
  * Lo que no cambia entre grados: es lo que impide que el modelo aproveche el viaje para
