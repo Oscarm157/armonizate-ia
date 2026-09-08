@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, UserRound, LogOut, Sparkles, History, ChartNoAxesColumn } from "lucide-react";
+import { Users, UserRound, LogOut, Sparkles, History, ChartNoAxesColumn, FlaskConical } from "lucide-react";
 import {
   Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup,
   SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem,
@@ -22,10 +22,11 @@ function isActive(pathname: string, href: string) {
 }
 
 export function AppSidebar({
-  user, showUsers, logoutAction,
+  user, showUsers, showValidacion, logoutAction,
 }: {
   user: { name: string; role: string };
   showUsers: boolean;
+  showValidacion: boolean;
   logoutAction: () => void;
 }) {
   const pathname = usePathname();
@@ -36,6 +37,8 @@ export function AppSidebar({
     { href: "/admin", label: "Simulador", icon: Sparkles },
     { href: "/admin/historial", label: "Historial", icon: History },
   ];
+  // Validación es medición interna sobre fotos de pacientes reales: solo administrador.
+  if (showValidacion) herramienta.push({ href: "/admin/validacion", label: "Validación", icon: FlaskConical });
 
   const cuenta: Item[] = [];
   if (showUsers) cuenta.push({ href: "/admin/reporte", label: "Reporte", icon: ChartNoAxesColumn });

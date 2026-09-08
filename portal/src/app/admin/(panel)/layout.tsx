@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { canManageUsers } from "@/lib/permissions";
+import { canManageUsers, isAdmin } from "@/lib/permissions";
 import { logout } from "@/app/actions/auth";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -18,6 +18,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         <AppSidebar
           user={{ name: me.name, role: me.role }}
           showUsers={canManageUsers(me.role)}
+          showValidacion={isAdmin(me.role)}
           logoutAction={logout}
         />
         <SidebarInset className="bg-[var(--crm-bg)]">
