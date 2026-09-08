@@ -3,9 +3,6 @@
 import { useActionState } from "react";
 
 import { login } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 type State = { error: string } | null;
 
@@ -16,36 +13,44 @@ export function LoginForm() {
   );
 
   return (
-    <form action={action} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Correo</Label>
-        <Input
+    <form action={action} className="space-y-3.5">
+      <div>
+        <label className="crm-eyebrow mb-1.5 block" htmlFor="email">
+          Correo
+        </label>
+        <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
           placeholder="tu@correo.com"
+          className="crm-input"
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
-        <Input
+      <div>
+        <label className="crm-eyebrow mb-1.5 block" htmlFor="password">
+          Contraseña
+        </label>
+        <input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           required
+          className="crm-input"
         />
       </div>
+
       {state?.error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p className="text-[13px] text-[var(--crm-danger)]" role="alert">
           {state.error}
         </p>
       ) : null}
-      <Button type="submit" className="w-full" disabled={pending}>
+
+      <button type="submit" disabled={pending} className="crm-btn crm-btn-primary w-full justify-center">
         {pending ? "Entrando..." : "Entrar"}
-      </Button>
+      </button>
     </form>
   );
 }

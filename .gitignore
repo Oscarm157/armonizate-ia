@@ -7,8 +7,10 @@ build/
 __pycache__/
 *.pyc
 
-# Secretos: nunca
+# Secretos: nunca. El patrón amplio es a propósito: un archivo suelto de variables
+# descargadas (verifica.env, pull.env) no coincide con ".env*" y se cuela.
 .env
+*.env
 .env.local
 .env*.local
 

@@ -3,7 +3,7 @@ import { checkBotId } from "botid/server";
 import { put } from "@vercel/blob";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { simulaciones } from "@/lib/schema";
+import { prospectos, simulaciones } from "@/lib/schema";
 import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 import { consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
@@ -21,8 +21,7 @@ const bodySchema = z.object({
   cabeza: z.string().regex(DATA_URL, "Imagen inválida."),
   // foto completa tal como la subió el vendedor, es lo que se guarda
   original: z.string().regex(DATA_URL, "Imagen inválida."),
-  prospectoNombre: z.string().trim().min(2, "Falta el nombre del prospecto.").max(80),
-  prospectoTelefono: z.string().trim().min(7, "Falta el teléfono.").max(25),
+  prospectoTelefono: z.string().trim().min(7, "Falta el celular del prospecto.").max(25),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -37,14 +36,20 @@ export async function POST(request: Request) {
   if (!canSimular(me.role))
     return NextResponse.json({ error: "Tu cuenta no puede generar simulaciones." }, { status: 403 });
 
-  const verificacion = await checkBotId();
-  if (verificacion.isBot) return NextResponse.json({ error: "Bloqueado." }, { status: 403 });
+  // BotID solo funciona desplegado en Vercel; en local lanza al intentar poner
+  // headers. Si no puede verificar, se sigue: el guard de sesión ya cerró la puerta.
+  try {
+    const verificacion = await checkBotId();
+    if (verificacion.isBot) return NextResponse.json({ error: "Bloqueado." }, { status: 403 });
+  } catch (e) {
+    if (process.env.VERCEL) throw e;
+  }
 
   let datos: z.infer<typeof bodySchema>;
   try {
     datos = await parseJson(bodySchema, request);
   } catch {
-    return NextResponse.json({ error: "Revisa la foto y los datos del prospecto." }, { status: 400 });
+    return NextResponse.json({ error: "Revisa la foto y el celular del prospecto." }, { status: 400 });
   }
 
   // El tope se verifica ANTES de llamar al modelo: pasado el límite no se gasta.
@@ -68,14 +73,21 @@ export async function POST(request: Request) {
     addRandomSuffix: true,
   });
 
+  // El prospecto se crea la primera vez que se le genera algo. La sede sale del
+  // vendedor, que es de donde después salen los números por plaza.
+  await db
+    .insert(prospectos)
+    .values({ telefono: datos.prospectoTelefono, sede: me.sede, userId: me.id })
+    .onConflictDoNothing();
+
   // La fila se crea antes de llamar al modelo: lo que consume cuota es haber pedido la
   // generación, no haberla terminado.
   const [fila] = await db
     .insert(simulaciones)
     .values({
       userId: me.id,
-      prospectoNombre: datos.prospectoNombre,
       prospectoTelefono: datos.prospectoTelefono,
+      sede: me.sede,
       antesUrl: antes.url,
       antesPathname: antes.pathname,
     })

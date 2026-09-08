@@ -2,14 +2,31 @@
 
 // Las dos imágenes que el vendedor manda por WhatsApp.
 //
-// El aviso va impreso EN la imagen, no en la página: la imagen se reenvía sola y sin
-// él una simulación se lee como una promesa de resultado.
+// Ambas llevan el logo de la clínica y el aviso impresos EN la imagen, no en la
+// página: la imagen se reenvía sola, y sin logo no se sabe de quién viene, sin aviso
+// una simulación se lee como una promesa de resultado.
 
-const AVISO = "Previsualización generada con IA · Los resultados finales pueden variar";
+import { cargarImagen } from "./landmarks";
+
+const AVISO_1 = "Previsualización generada con IA";
+const AVISO_2 = "Los resultados finales pueden variar";
 
 const TINTA = "#121333";
 const INDIGO = "#4c4e98";
 const LAVANDA = "#eae7f3";
+
+let logo: HTMLImageElement | null = null;
+
+/** El logo se carga una vez y se reusa; sin él las imágenes salen igual, sin marca. */
+export async function precargarLogo(): Promise<void> {
+  if (!logo) {
+    try {
+      logo = await cargarImagen("/logo-armonizate.png");
+    } catch {
+      logo = null;
+    }
+  }
+}
 
 function lienzo(ancho: number, alto: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const c = document.createElement("canvas");
@@ -20,50 +37,66 @@ function lienzo(ancho: number, alto: number): [HTMLCanvasElement, CanvasRenderin
   return [c, ctx];
 }
 
-/** Franja del aviso al pie, proporcional al ancho para que se lea a cualquier tamaño. */
-function pintarAviso(ctx: CanvasRenderingContext2D, ancho: number, y: number, alturaFranja: number) {
+/** Pie de la imagen: logo a la izquierda, aviso a la derecha, sobre el lavanda. */
+function pintarPie(ctx: CanvasRenderingContext2D, ancho: number, y: number, alto: number) {
   ctx.fillStyle = LAVANDA;
-  ctx.fillRect(0, y, ancho, alturaFranja);
+  ctx.fillRect(0, y, ancho, alto);
+
+  const margen = alto * 0.28;
+  let x = margen;
+
+  if (logo) {
+    const altoLogo = alto * 0.44;
+    const anchoLogo = (logo.naturalWidth / logo.naturalHeight) * altoLogo;
+    ctx.drawImage(logo, x, y + (alto - altoLogo) / 2, anchoLogo, altoLogo);
+    x += anchoLogo + margen;
+  }
+
   ctx.fillStyle = TINTA;
-  ctx.font = `500 ${Math.round(alturaFranja * 0.34)}px Montserrat, system-ui, sans-serif`;
-  ctx.textAlign = "center";
+  ctx.textAlign = "right";
   ctx.textBaseline = "middle";
-  ctx.fillText(AVISO, ancho / 2, y + alturaFranja / 2, ancho * 0.94);
+  const cuerpo = Math.round(alto * 0.2);
+  ctx.font = `600 ${cuerpo}px Montserrat, system-ui, sans-serif`;
+  ctx.fillText(AVISO_1, ancho - margen, y + alto * 0.37, ancho - x - margen);
+  ctx.font = `400 ${cuerpo}px Montserrat, system-ui, sans-serif`;
+  ctx.fillStyle = "#4a4a63";
+  ctx.fillText(AVISO_2, ancho - margen, y + alto * 0.65, ancho - x - margen);
 }
 
 function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number, y: number, ancho: number) {
-  const alto = Math.round(ancho * 0.075);
+  const alto = Math.round(ancho * 0.072);
+  const anchoCaja = ancho * 0.32;
   ctx.fillStyle = INDIGO;
   ctx.beginPath();
-  ctx.roundRect(x + ancho * 0.03, y + ancho * 0.03, ancho * 0.30, alto, alto / 2);
+  ctx.roundRect(x + ancho * 0.035, y + ancho * 0.035, anchoCaja, alto, alto / 2);
   ctx.fill();
   ctx.fillStyle = "#fff";
-  ctx.font = `600 ${Math.round(alto * 0.45)}px Montserrat, system-ui, sans-serif`;
+  ctx.font = `600 ${Math.round(alto * 0.44)}px Montserrat, system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(texto, x + ancho * 0.03 + ancho * 0.15, y + ancho * 0.03 + alto / 2);
+  ctx.fillText(texto, x + ancho * 0.035 + anchoCaja / 2, y + ancho * 0.035 + alto / 2);
 }
 
-/** Solo el después, con el aviso al pie. */
+/** Solo el después, con logo y aviso al pie. */
 export function soloDespues(despues: HTMLCanvasElement): HTMLCanvasElement {
-  const franja = Math.round(despues.width * 0.075);
-  const [c, ctx] = lienzo(despues.width, despues.height + franja);
+  const pie = Math.round(despues.width * 0.13);
+  const [c, ctx] = lienzo(despues.width, despues.height + pie);
   ctx.drawImage(despues, 0, 0);
-  pintarAviso(ctx, c.width, despues.height, franja);
+  pintarPie(ctx, c.width, despues.height, pie);
   return c;
 }
 
-/** Antes y después juntos, etiquetados, con el aviso al pie. */
+/** Antes y después juntos, etiquetados, con logo y aviso al pie. */
 export function antesYDespues(
   antes: HTMLImageElement,
   despues: HTMLCanvasElement
 ): HTMLCanvasElement {
   const w = despues.width;
   const h = despues.height;
-  const sep = Math.round(w * 0.02);
-  const franja = Math.round(w * 0.075);
+  const sep = Math.round(w * 0.018);
+  const pie = Math.round(w * 0.115);
 
-  const [c, ctx] = lienzo(w * 2 + sep, h + franja);
+  const [c, ctx] = lienzo(w * 2 + sep, h + pie);
   ctx.fillStyle = LAVANDA;
   ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(antes, 0, 0, w, h);
@@ -71,7 +104,7 @@ export function antesYDespues(
 
   pintarEtiqueta(ctx, "ANTES", 0, 0, w);
   pintarEtiqueta(ctx, "DESPUÉS", w + sep, 0, w);
-  pintarAviso(ctx, c.width, h, franja);
+  pintarPie(ctx, c.width, h, pie);
   return c;
 }
 
@@ -91,8 +124,8 @@ export function descargar(canvas: HTMLCanvasElement, nombre: string) {
   );
 }
 
-export function aDataUrl(canvas: HTMLCanvasElement): string {
-  return canvas.toDataURL("image/jpeg", 0.92);
+export function aDataUrl(canvas: HTMLCanvasElement, calidad = 0.92): string {
+  return canvas.toDataURL("image/jpeg", calidad);
 }
 
 /**

@@ -1,9 +1,74 @@
 {
-  "id": "b8316c14-8d17-4e53-a54d-d53eefbe4a5f",
+  "id": "0c1f804d-7d23-4008-af71-bab20a464a55",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.prospectos": {
+      "name": "prospectos",
+      "schema": "",
+      "columns": {
+        "telefono": {
+          "name": "telefono",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sede": {
+          "name": "sede",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resultado": {
+          "name": "resultado",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pendiente'"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creado_en": {
+          "name": "creado_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "marcado_en": {
+          "name": "marcado_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "prospectos_user_id_users_id_fk": {
+          "name": "prospectos_user_id_users_id_fk",
+          "tableFrom": "prospectos",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.simulaciones": {
       "name": "simulaciones",
       "schema": "",
@@ -21,17 +86,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "prospecto_nombre": {
-          "name": "prospecto_nombre",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "prospecto_telefono": {
           "name": "prospecto_telefono",
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "sede": {
+          "name": "sede",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "antes_url": {
           "name": "antes_url",
@@ -122,6 +187,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'agent'"
+        },
+        "sede": {
+          "name": "sede",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "active": {
           "name": "active",

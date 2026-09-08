@@ -3,11 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { esSede } from "@/lib/sedes";
 import { users, type UserRole } from "@/lib/schema";
 import { hashPassword } from "@/lib/auth";
 import { requireAdmin } from "@/lib/session";
 
 const ROLES: UserRole[] = ["admin", "agent", "viewer"];
+
+// La sede del vendedor es de donde sale el corte por plaza del reporte, así que se
+// asigna al darlo de alta y no se le pide en cada simulación.
+function leerSede(formData: FormData) {
+  const v = String(formData.get("sede") ?? "");
+  return esSede(v) ? v : null;
+}
 
 const CHARS = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -36,6 +44,7 @@ export async function createUser(
   try {
     await db.insert(users).values({
       name,
+      sede: leerSede(formData),
       email,
       role,
       passwordHash: await hashPassword(tempPassword),

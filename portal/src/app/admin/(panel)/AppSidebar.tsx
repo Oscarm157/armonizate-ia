@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, UserRound, LogOut, Sparkles, History } from "lucide-react";
+import { Users, UserRound, LogOut, Sparkles, History, ChartNoAxesColumn } from "lucide-react";
 import {
   Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarGroup,
   SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem,
@@ -38,6 +38,7 @@ export function AppSidebar({
   ];
 
   const cuenta: Item[] = [];
+  if (showUsers) cuenta.push({ href: "/admin/reporte", label: "Reporte", icon: ChartNoAxesColumn });
   if (showUsers) cuenta.push({ href: "/admin/users", label: "Usuarios", icon: Users });
   cuenta.push({ href: "/admin/profile", label: "Perfil", icon: UserRound });
 
