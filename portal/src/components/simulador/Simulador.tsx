@@ -384,7 +384,7 @@ function Paso({
         </span>
         <span className="text-[14.5px] text-[var(--crm-ink)]">{texto}</span>
       </div>
-      {children ? <div className="pl-7">{children}</div> : null}
+      {children ? <div className="mt-2 pl-7">{children}</div> : null}
     </li>
   );
 }
