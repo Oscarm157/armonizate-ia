@@ -1,0 +1,439 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-montserrat);
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
+
+/* ============================================================
+   Panel — tema claro de Clínica Armonízate. Todo bajo .crm-root
+   para no filtrar estilos fuera del panel.
+   ============================================================ */
+
+.crm-root {
+  /* ===== Paleta Clínica Armonízate =====
+     Medida del sitio de la clínica, no inventada. Tema claro a propósito: la marca
+     es lavanda y el vendedor usa esto en la calle, en el celular, a plena luz.
+     Elevación por color y hairline, NO por sombra. */
+  --crm-bg: #eae7f3;          /* lavanda de la marca, el lienzo */
+  --crm-surface: #ffffff;     /* tarjetas, tablas, formularios */
+  --crm-surface-2: #ffffff;   /* card */
+  --crm-surface-3: #f5f4fa;   /* hundido: filas alternas, campos, dropzone */
+  --crm-ink: #121333;         /* títulos y cifras */
+  --crm-ink-soft: #4a4a63;    /* párrafo */
+  --crm-ink-mute: #6b6885;    /* labels, headers de tabla */
+  --crm-ink-faint: #7c7798;   /* metadatos, placeholders */
+  --crm-line: #dedbea;        /* hairline */
+  --crm-line-strong: #c9c4dd; /* borde de input, divisor fuerte */
+
+  /* Índigo de la marca */
+  --crm-accent: #4c4e98;
+  --crm-accent-soft: #3d3f7d;       /* hover sobre relleno */
+  --crm-accent-strong: #2f3163;     /* texto sobre fondo claro */
+  --crm-accent-tint: rgba(76, 78, 152, 0.08);
+  --crm-accent-tint-2: rgba(76, 78, 152, 0.14);
+  --crm-accent-ring: rgba(76, 78, 152, 0.35);
+  --crm-on-accent: #ffffff;
+  --crm-danger: #cc3366;            /* rosa de la marca: error y cuota agotada */
+
+  /* Radios generosos, como los bloques del sitio */
+  --crm-r-sm: 8px;
+  --crm-r-md: 12px;
+  --crm-r-lg: 16px;
+  --crm-r-xl: 22px;
+
+  /* Sombra SOLO para overlays (popover/modal/dropdown) */
+  --crm-shadow-pop: 0 16px 48px -12px rgba(18, 19, 51, 0.18), 0 0 0 1px var(--crm-line);
+
+  /* ===== Alias legacy --crm-wine* → --crm-accent* (no romper componentes) ===== */
+  --crm-wine: var(--crm-accent);
+  --crm-wine-soft: var(--crm-accent-soft);
+  --crm-wine-tint: var(--crm-accent-tint);
+  --crm-wine-ring: var(--crm-accent-ring);
+
+  /* Tokens shadcn aliasados al palette del panel (dark + mint). */
+  --background: var(--crm-bg);
+  --foreground: var(--crm-ink);
+  --card: var(--crm-surface-2);
+  --card-foreground: var(--crm-ink);
+  --popover: var(--crm-surface-2);
+  --popover-foreground: var(--crm-ink);
+  --primary: var(--crm-accent);
+  --primary-foreground: var(--crm-on-accent);
+  --secondary: var(--crm-surface-3);
+  --secondary-foreground: var(--crm-ink);
+  --muted: var(--crm-surface-2);
+  --muted-foreground: var(--crm-ink-mute);
+  --accent: var(--crm-surface-3);
+  --accent-foreground: var(--crm-ink);
+  --destructive: #f0503f;
+  --destructive-foreground: #ffffff;
+  --border: var(--crm-line);
+  --input: var(--crm-line-strong);
+  --ring: var(--crm-accent-ring);
+  --radius: 0.5rem;
+  --sidebar: var(--crm-surface);
+  --sidebar-foreground: var(--crm-ink-soft);
+  --sidebar-primary: var(--crm-accent);
+  --sidebar-primary-foreground: var(--crm-on-accent);
+  --sidebar-accent: var(--crm-accent-tint);
+  --sidebar-accent-foreground: var(--crm-accent-strong);
+  --sidebar-border: var(--crm-line);
+  --sidebar-ring: var(--crm-accent-ring);
+
+  background: var(--crm-bg);
+  color: var(--crm-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Reset base de shadcn, SCOPEADO al panel (no global, para no tocar la landing).
+   En @layer base para que cualquier utilidad border-* explícita lo sobrescriba. */
+@layer base {
+  .crm-root *,
+  .crm-root ::after,
+  .crm-root ::before {
+    border-color: var(--border);
+  }
+}
+
+/* ===== Escala tipográfica del panel (Inter, tracking apretado tipo Linear) ===== */
+.crm-h1 {
+  font-weight: 600;
+  font-size: 21px;
+  line-height: 1.18;
+  letter-spacing: -0.022em;
+  color: var(--crm-ink);
+}
+.crm-h2 {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+  letter-spacing: -0.014em;
+  color: var(--crm-ink);
+}
+.crm-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--crm-ink-mute);
+}
+/* Toda métrica, moneda, fecha y contador: números tabulares */
+.crm-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+.crm-card {
+  background: var(--crm-surface-2);
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-lg);
+}
+.crm-card-flat {
+  background: var(--crm-surface);
+  border: 1px solid var(--crm-line);
+  border-radius: var(--crm-r-lg);
+}
+.crm-hairline { height: 1px; background: var(--crm-line); border: 0; }
+.crm-rule { border-color: var(--crm-line); }
+
+.crm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 36px;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    transform 0.08s ease, box-shadow 0.15s ease;
+}
+.crm-btn:active { transform: translateY(0.5px); }
+.crm-btn:disabled { opacity: 0.5; pointer-events: none; }
+
+.crm-btn-primary {
+  background: var(--crm-accent);
+  color: var(--crm-on-accent);
+  border: 1px solid transparent;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.crm-btn-primary:hover { background: var(--crm-accent-soft); }
+
+.crm-btn-secondary {
+  background: var(--crm-surface-2);
+  color: var(--crm-ink);
+  border: 1px solid var(--crm-line-strong);
+}
+.crm-btn-secondary:hover { background: var(--crm-surface-3); border-color: var(--crm-ink-faint); }
+
+.crm-btn-ghost {
+  background: transparent;
+  color: var(--crm-ink-soft);
+  border: 1px solid transparent;
+}
+.crm-btn-ghost:hover { background: var(--crm-wine-tint); color: var(--crm-wine); }
+
+.crm-btn-sm { height: 30px; padding: 0 0.65rem; font-size: 12.5px; border-radius: 7px; }
+
+.crm-input,
+.crm-select,
+.crm-textarea {
+  width: 100%;
+  background: var(--crm-surface);
+  border: 1px solid var(--crm-line-strong);
+  border-radius: var(--crm-r-md);
+  padding: 0 0.7rem;
+  height: 36px;
+  font-size: 14px;
+  color: var(--crm-ink);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.crm-textarea { height: auto; padding: 0.55rem 0.7rem; line-height: 1.5; }
+.crm-input::placeholder,
+.crm-textarea::placeholder { color: var(--crm-ink-mute); }
+.crm-select option { background: var(--crm-surface); color: var(--crm-ink); }
+.crm-input:focus,
+.crm-select:focus,
+.crm-textarea:focus {
+  border-color: var(--crm-wine-soft);
+  box-shadow: 0 0 0 3px var(--crm-wine-ring);
+}
+
+.crm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--crm-line-strong);
+  background: var(--crm-surface-2);
+  color: var(--crm-ink-soft);
+}
+.crm-badge-wine {
+  border-color: transparent;
+  background: var(--crm-wine-tint);
+  color: var(--crm-wine);
+}
+
+.crm-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 32px;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--crm-ink-soft);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.crm-nav-link:hover { background: rgba(255, 255, 255, 0.05); color: var(--crm-ink); }
+.crm-nav-link[data-active="true"] {
+  background: var(--crm-wine-tint);
+  color: var(--crm-wine);
+}
+
+.crm-table { width: 100%; text-align: left; border-collapse: collapse; }
+/* Headers sentence-case, NO uppercase (lo más dated del sistema previo) */
+.crm-th {
+  padding: 0.5rem 1rem;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--crm-ink-mute);
+  white-space: nowrap;
+}
+/* Orden: header clickable con afford. de flecha */
+.crm-th-sort { cursor: pointer; user-select: none; transition: color 0.15s ease; }
+.crm-th-sort:hover { color: var(--crm-ink-soft); }
+.crm-td { padding: 0.7rem 1rem; vertical-align: middle; }
+/* Header silencioso, sticky-ready, separado por hairline */
+.crm-thead { background: var(--crm-surface); border-bottom: 1px solid var(--crm-line); }
+.crm-thead .crm-th { color: var(--crm-ink-mute); }
+.crm-row { background: transparent; transition: background-color 0.14s ease; }
+.crm-row:hover { background: var(--crm-surface-3); }
+.crm-row + .crm-row { border-top: 1px solid var(--crm-line); }
+
+.crm-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: var(--crm-r-md);
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.32rem 0.7rem;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--crm-ink-soft);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.crm-tab:hover { background: var(--crm-surface-2); color: var(--crm-ink); }
+.crm-tab[data-active="true"] {
+  border-color: var(--crm-line-strong);
+  background: var(--crm-surface-3);
+  color: var(--crm-ink);
+  font-weight: 600;
+}
+.crm-tab[data-active="true"] .crm-tab-count { color: var(--crm-accent-strong); }
+
+.crm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--crm-line);
+  border-radius: 10px;
+  background: var(--crm-surface);
+  text-align: center;
+}
+
+.crm-dropzone {
+  border: 1px dashed transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.crm-dropzone[data-accepts="true"] { border-color: var(--crm-wine-ring); }
+.crm-dropzone[data-over="true"] {
+  border-color: var(--crm-wine);
+  background: var(--crm-wine-tint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-fade { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
+.crm-fade { animation: crmFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes crmFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Oculta el scrollbar nativo (mantiene el scroll). Usado en el pipeline y el chat. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scrollbar fino para las áreas con scroll interno del CRM (notas, form de edición). */
+.crm-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--crm-line-strong) transparent;
+}
+.crm-scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.crm-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.crm-scroll::-webkit-scrollbar-thumb {
+  background: var(--crm-line-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.crm-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--crm-ink-faint);
+}

@@ -1,0 +1,22 @@
+node_modules/
+.next/
+out/
+build/
+.vercel/
+.venv/
+__pycache__/
+*.pyc
+
+# Secretos: nunca
+.env
+.env.local
+.env*.local
+
+# Fotos de pacientes: nunca. Son datos biométricos.
+/simulador/dataset/
+/simulador/modelos/
+*.zip
+
+.DS_Store
+tsconfig.tsbuildinfo
+next-env.d.ts

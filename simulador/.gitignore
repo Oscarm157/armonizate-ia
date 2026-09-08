@@ -1,0 +1,15 @@
+# Fotos de pacientes: nunca a git
+/dataset/
+*.zip
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+.env.local
+
+# Modelo de landmarks (se descarga, no se versiona)
+/modelos/
