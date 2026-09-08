@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, Check, Copy, ImageUp, Link2, RotateCcw, Sparkles } from "lucide-react";
-import { ReactCompareSlider, ReactCompareSliderImage } from "react-compare-slider";
 import { cargarImagen, detectar } from "@/lib/simulador/landmarks";
 import { cajaCabeza } from "@/lib/simulador/geometria";
 import { componer } from "@/lib/simulador/componer";
@@ -12,6 +11,7 @@ import {
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { GRADOS, type Grado } from "@/lib/simulador/grado";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
+import { Comparar } from "./Comparar";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
@@ -256,19 +256,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
             )}
 
             {estado === "hecho" && original && resultado && (
-              <>
-                <ReactCompareSlider
-                  className="h-full w-full"
-                  itemOne={<ReactCompareSliderImage src={original} alt="Actual" style={{ objectFit: "contain" }} />}
-                  itemTwo={<ReactCompareSliderImage src={resultado} alt="Simulación" style={{ objectFit: "contain" }} />}
-                />
-                <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-[var(--crm-ink)]/70 px-2.5 py-1 text-[11px] text-white">
-                  Actual
-                </span>
-                <span className="pointer-events-none absolute right-3 bottom-3 rounded-full bg-[var(--crm-accent)] px-2.5 py-1 text-[11px] text-[var(--crm-on-accent)]">
-                  Simulación
-                </span>
-              </>
+              <Comparar actual={original} simulacion={resultado} className="h-full w-full" />
             )}
 
             {estado !== "hecho" && original && (
@@ -288,7 +276,9 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
           {estado === "hecho" && (
             <div className="flex flex-col items-center gap-4 pt-5">
-              <p className="text-[12.5px] text-[var(--crm-ink-mute)]">Deslice el control para comparar</p>
+              <p className="text-[12.5px] text-[var(--crm-ink-mute)]">
+                Mantenga pulsada la imagen para ver la simulación, o arrastre el control
+              </p>
               {simulacionId && (
                 <Calificar valor={null} onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
               )}

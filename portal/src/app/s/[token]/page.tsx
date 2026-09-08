@@ -45,8 +45,8 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
           <>
             <h1 className="crm-display text-center text-[30px]!">Su simulación</h1>
             <p className="mx-auto mt-3 mb-8 max-w-[48ch] text-center text-[14.5px] leading-relaxed text-[var(--crm-ink-mute)]">
-              Deslice el control para comparar su fotografía con la simulación del
-              procedimiento.
+              Mantenga pulsada la imagen para ver la simulación. Al soltar vuelve su
+              fotografía actual.
             </p>
 
             <Comparador token={token} />
