@@ -15,12 +15,18 @@ export async function GET(
   { params }: { params: Promise<{ token: string; cual: string }> }
 ) {
   const { token, cual } = await params;
-  if (cual !== "antes" && cual !== "simulacion") return new Response("No encontrada.", { status: 404 });
+  const CUALES = ["antes", "simulacion", "comparativa"];
+  if (!CUALES.includes(cual)) return new Response("No encontrada.", { status: 404 });
 
   const sim = await porToken(token);
   if (!sim) return new Response("El enlace ya no está disponible.", { status: 410 });
 
-  const pathname = cual === "antes" ? sim.antesPathname : sim.despuesPathname;
+  const pathname =
+    cual === "antes"
+      ? sim.antesPathname
+      : cual === "comparativa"
+        ? sim.comparativaPathname
+        : sim.despuesPathname;
   if (!pathname) return new Response("Sin imagen.", { status: 404 });
 
   const archivo = await get(pathname, { access: "private" });

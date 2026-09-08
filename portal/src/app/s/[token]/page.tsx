@@ -51,6 +51,22 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
 
             <Comparador token={token} />
 
+            {/* La misma pieza que se puede guardar o reenviar: el comparador solo vive
+                mientras la página esté abierta. */}
+            {sim.comparativaPathname && (
+              <figure className="mt-8">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/s/${token}/comparativa`}
+                  alt="Estado actual y simulación"
+                  className="w-full rounded-[var(--crm-r-lg)]"
+                />
+                <figcaption className="mt-3 text-center text-[12.5px] text-[var(--crm-ink-faint)]">
+                  Mantenga presionada la imagen para guardarla
+                </figcaption>
+              </figure>
+            )}
+
             <div className="mt-8 rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-6 py-6">
               <p className="text-[15px] font-medium text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
               <p className="mt-2 text-[14px] leading-relaxed text-[var(--crm-ink-soft)]">
