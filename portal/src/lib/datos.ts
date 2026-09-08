@@ -1,10 +1,10 @@
-import { and, count, desc, eq, gte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, sql } from "drizzle-orm";
 import { db } from "./db";
 import { prospectos, simulaciones, users, type Resultado, type Simulacion, type User } from "./schema";
 import type { Sede } from "./sedes";
 
-/** Cuántas generaciones puede pedir un vendedor al mes. */
-export const TOPE_MENSUAL = 100;
+/** Cuántas generaciones puede pedir un asesor al mes. */
+export const TOPE_MENSUAL = 50;
 
 /** Primer instante del mes en curso, que es donde arranca la cuota. */
 export function inicioDelMes(hoy = new Date()): Date {
@@ -40,7 +40,9 @@ export async function consumoDelEquipo(): Promise<Map<string, number>> {
 }
 
 export type ProspectoConSimulaciones = {
-  telefono: string;
+  correo: string;
+  vambe: string | null;
+  asesor: string | null;
   resultado: Resultado;
   sede: Sede | null;
   simulaciones: Simulacion[];
@@ -52,31 +54,36 @@ export type ProspectoConSimulaciones = {
  * Se agrupa porque el mismo prospecto suele pedir varias simulaciones y el resultado
  * de la venta es uno solo: marcarlo por simulación daría números inflados.
  */
-export async function misProspectos(userId: string, limite = 80): Promise<ProspectoConSimulaciones[]> {
-  const filas = await db
-    .select()
-    .from(simulaciones)
-    .where(eq(simulaciones.userId, userId))
-    .orderBy(desc(simulaciones.creadoEn))
-    .limit(limite);
+export async function misProspectos(
+  userId: string,
+  { todoElEquipo = false, limite = 80 } = {}
+): Promise<ProspectoConSimulaciones[]> {
+  // Un administrador puede mirar el trabajo de todo el equipo: sin esto, revisar lo que
+  // generó otra persona obliga a consultar la base a mano.
+  const filas = todoElEquipo
+    ? await db.select().from(simulaciones).orderBy(desc(simulaciones.creadoEn)).limit(limite)
+    : await db
+        .select()
+        .from(simulaciones)
+        .where(eq(simulaciones.userId, userId))
+        .orderBy(desc(simulaciones.creadoEn))
+        .limit(limite);
 
-  const estados = new Map(
-    (await db.select().from(prospectos).where(eq(prospectos.userId, userId))).map((p) => [
-      p.telefono,
-      p,
-    ])
-  );
+  const estados = new Map((await db.select().from(prospectos)).map((p) => [p.correo, p]));
+  const nombres = new Map((await db.select().from(users)).map((u) => [u.id, u.name]));
 
   const agrupado = new Map<string, ProspectoConSimulaciones>();
   for (const s of filas) {
-    const previo = agrupado.get(s.prospectoTelefono);
+    const previo = agrupado.get(s.prospectoCorreo);
     if (previo) {
       previo.simulaciones.push(s);
       continue;
     }
-    const p = estados.get(s.prospectoTelefono);
-    agrupado.set(s.prospectoTelefono, {
-      telefono: s.prospectoTelefono,
+    const p = estados.get(s.prospectoCorreo);
+    agrupado.set(s.prospectoCorreo, {
+      correo: s.prospectoCorreo,
+      vambe: p?.vambe ?? s.prospectoVambe ?? null,
+      asesor: todoElEquipo ? (nombres.get(s.userId) ?? null) : null,
       resultado: p?.resultado ?? "pendiente",
       sede: p?.sede ?? s.sede ?? null,
       simulaciones: [s],
@@ -133,4 +140,20 @@ export async function reportePorSede(desde: Date, hasta: Date): Promise<FilaRepo
   }
 
   return [...mapa.values()].sort((a, b) => b.ganados - a.ganados || b.simulaciones - a.simulaciones);
+}
+
+/**
+ * Busca una simulación por el token de su enlace público, solo si sigue vigente.
+ *
+ * La vigencia se comprueba aquí, contra el reloj de la base y en cada petición, para que
+ * la página y las imágenes caduquen a la vez. Si la página expirara pero las imágenes se
+ * siguieran sirviendo, el enlace no caducaría de verdad.
+ */
+export async function porToken(token: string): Promise<Simulacion | null> {
+  if (!token) return null;
+  const filas = await db
+    .select()
+    .from(simulaciones)
+    .where(and(eq(simulaciones.token, token), gt(simulaciones.expiraEn, new Date())));
+  return filas[0] ?? null;
 }

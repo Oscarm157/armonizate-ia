@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, ImageUp, RotateCcw, Sparkles } from "lucide-react";
+import { AlertCircle, Check, ImageUp, Link2, RotateCcw, Sparkles } from "lucide-react";
 import { ReactCompareSlider, ReactCompareSliderImage } from "react-compare-slider";
 import { cargarImagen, detectar } from "@/lib/simulador/landmarks";
 import { cajaCabeza } from "@/lib/simulador/geometria";
@@ -9,6 +9,8 @@ import { componer } from "@/lib/simulador/componer";
 import {
   aDataUrl, actualYSimulacion, descargar, precargarLogo, reducir, soloSimulacion,
 } from "@/lib/simulador/entrega";
+import { HORAS_VIGENCIA } from "@/lib/enlace";
+import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
@@ -24,6 +26,8 @@ const GUIA = [
   "Sin lentes ni gorra",
 ];
 
+const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [estado, setEstado] = useState<Estado>("vacio");
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +35,11 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [original, setOriginal] = useState<string | null>(null);
   const [resultado, setResultado] = useState<string | null>(null);
   const [entregas, setEntregas] = useState<Entrega[]>([]);
-  const [telefono, setTelefono] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [vambe, setVambe] = useState("");
   const [simulacionId, setSimulacionId] = useState<string | null>(null);
+  const [enlace, setEnlace] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
   const [repeticiones, setRepeticiones] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   // La foto tal como la subió el vendedor, sin reducir ni recomprimir. Es sobre esta
@@ -48,8 +55,9 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   }, []);
 
   const agotado = consumo >= tope;
-  const soloDigitos = telefono.replace(/\D/g, "");
-  const datosListos = soloDigitos.length >= 10;
+  const correoOk = CORREO.test(correo.trim());
+  const vambeOk = /^https?:\/\/\S+$/.test(vambe.trim());
+  const datosListos = correoOk && vambeOk;
 
   const cargar = useCallback(async (file: File) => {
     setError(null);
@@ -101,7 +109,8 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
         body: JSON.stringify({
           cabeza: c.toDataURL("image/jpeg", 0.95),
           original,
-          prospectoTelefono: telefono,
+          correo: correo.trim(),
+          vambe: vambe.trim(),
         }),
       });
       // Si el servidor truena antes de responder, el cuerpo viene vacío: leerlo como
@@ -115,22 +124,25 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       if (!compuesta) throw new Error("No se pudo ajustar el resultado sobre la foto original.");
 
       finalRef.current = { simulacion: compuesta, actual: img };
+      const pieza = aDataUrl(soloSimulacion(compuesta), 0.85);
+      const comparativa = aDataUrl(actualYSimulacion(img, compuesta), 0.85);
       setResultado(compuesta.toDataURL("image/jpeg", 0.92));
       setEntregas([
         {
           clave: "simulacion",
           titulo: "Simulación",
           pie: "La imagen del resultado estimado",
-          dataUrl: aDataUrl(soloSimulacion(compuesta), 0.85),
+          dataUrl: pieza,
         },
         {
           clave: "comparativa",
           titulo: "Comparativa",
           pie: "Estado actual y simulación, lado a lado",
-          dataUrl: aDataUrl(actualYSimulacion(img, compuesta), 0.85),
+          dataUrl: comparativa,
         },
       ]);
       setSimulacionId(data.id ?? null);
+      setEnlace(data.token ? `${location.origin}/s/${data.token}` : null);
       setConsumo(data.usadas ?? consumo + 1);
       setEstado("hecho");
 
@@ -138,13 +150,24 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       fetch(`/api/simulaciones/${data.id}/resultado`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imagen: compuesta.toDataURL("image/jpeg", 0.9) }),
+        body: JSON.stringify({
+          imagen: compuesta.toDataURL("image/jpeg", 0.9),
+          pieza,
+          comparativa,
+        }),
       }).catch(() => {});
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo generar la simulación.");
       setEstado("error");
     }
-  }, [original, telefono, consumo]);
+  }, [original, correo, vambe, consumo]);
+
+  const copiarEnlace = async () => {
+    if (!enlace) return;
+    await navigator.clipboard.writeText(enlace);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
 
   const reiniciar = () => {
     setEstado("vacio");
@@ -152,8 +175,10 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setResultado(null);
     setEntregas([]);
     setError(null);
-    setTelefono("");
+    setCorreo("");
+    setVambe("");
     setSimulacionId(null);
+    setEnlace(null);
     setRepeticiones(0);
     finalRef.current = null;
     fotoRef.current = null;
@@ -163,13 +188,12 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const bajar = (clave: string) => {
     const f = finalRef.current;
     if (!f) return;
-    const base = soloDigitos || "paciente";
+    const base = correo.trim().split("@")[0] || "paciente";
     if (clave === "simulacion") descargar(soloSimulacion(f.simulacion), `${base}-simulacion.jpg`);
     else descargar(actualYSimulacion(f.actual, f.simulacion), `${base}-comparativa.jpg`);
   };
 
   const paso = !original ? 1 : !datosListos ? 2 : estado === "hecho" ? 3 : 2;
-
 
   return (
     <>
@@ -257,11 +281,31 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
           )}
         </div>
 
-        {/* Control. Terminada la simulación, aquí manda el material: si se dejaran los
-            pasos ya cumplidos, lo que el asesor necesita quedaría bajo el pliegue. */}
+        {/* Control. Terminada la simulación, aquí manda el enlace: es lo que se le manda
+            al paciente y lo que sustituye al envío de la fotografía. */}
         <div className="border-t border-[var(--crm-line)] pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-12">
-          {estado === "hecho" && entregas.length > 0 ? (
-            <Entregas entregas={entregas} onDescargar={bajar} />
+          {estado === "hecho" ? (
+            <div className="space-y-7">
+              {enlace && (
+                <div>
+                  <p className="crm-eyebrow mb-3">Enlace para el paciente</p>
+                  <p className="crm-num truncate rounded-[var(--crm-r-sm)] bg-[var(--crm-surface-3)] px-3 py-2.5 text-[12px] text-[var(--crm-ink-mute)]">
+                    {enlace}
+                  </p>
+                  <button
+                    onClick={copiarEnlace}
+                    className="crm-btn crm-btn-primary mt-3 w-full justify-center"
+                  >
+                    <Link2 className="size-4" /> {copiado ? "Enlace copiado" : "Copiar enlace"}
+                  </button>
+                  <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
+                    Vence en {HORAS_VIGENCIA} horas. Puede reactivarlo desde el historial sin gastar
+                    otra simulación.
+                  </p>
+                </div>
+              )}
+              {entregas.length > 0 && <Entregas entregas={entregas} onDescargar={bajar} />}
+            </div>
           ) : (
             <ol className="space-y-6">
               <Paso n={1} activo={paso === 1} hecho={!!original} texto="Fotografía">
@@ -276,19 +320,36 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                 )}
               </Paso>
 
-              <Paso n={2} activo={paso === 2} hecho={datosListos} texto="Teléfono del paciente">
-                <input
-                  id="telefono"
-                  className="crm-input mt-2.5"
-                  inputMode="tel"
-                  placeholder="10 dígitos"
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                  disabled={estado === "generando"}
-                />
+              <Paso n={2} activo={paso === 2} hecho={datosListos} texto="Datos del paciente">
+                <div className="mt-2.5 space-y-2.5">
+                  <input
+                    id="correo"
+                    className="crm-input"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="off"
+                    placeholder="Correo del paciente"
+                    value={correo}
+                    onChange={(e) => setCorreo(e.target.value)}
+                    disabled={estado === "generando"}
+                  />
+                  <input
+                    id="vambe"
+                    className="crm-input"
+                    type="url"
+                    autoComplete="off"
+                    placeholder="Enlace del contacto en Vambe"
+                    value={vambe}
+                    onChange={(e) => setVambe(e.target.value)}
+                    disabled={estado === "generando"}
+                  />
+                  <p className="text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
+                    El enlace de Vambe se copia desde la conversación del contacto.
+                  </p>
+                </div>
               </Paso>
 
-              <Paso n={3} activo={paso === 3} hecho={estado === "hecho"} texto="Generar y enviar" />
+              <Paso n={3} activo={paso === 3} hecho={false} texto="Generar y enviar el enlace" />
             </ol>
           )}
 
@@ -348,14 +409,18 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
         </div>
       </div>
 
-      <div className="mt-7 flex flex-col gap-2 px-1 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
-        <p>
-          Ambas imágenes se entregan con el aviso impreso de que son una simulación y de que el
-          resultado final puede variar.
+      {/* El aviso, tal cual lo ve el paciente en el enlace. Está aquí para que el asesor
+          sepa exactamente con qué texto se entrega y no prometa de más en la conversación. */}
+      <div className="crm-mesa mt-7 p-6 sm:p-8">
+        <p className="text-[14.5px] text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
+        <p className="mt-2 max-w-[70ch] text-[13px] leading-relaxed text-[var(--crm-ink-mute)]">
+          {LEGAL_CUERPO}
         </p>
         {/* "Calibrado" y no "entrenado": el modelo que corre es nano-banana con el prompt
             ajustado contra esos casos, no el LoRA. Es cierto y se sostiene si preguntan. */}
-        <p>Calibrado con más de 100 casos reales de Otomodelación Belab. Proyecto en mejora continua.</p>
+        <p className="mt-4 text-[12px] text-[var(--crm-ink-faint)]">
+          Calibrado con más de 100 casos reales de Otomodelación Belab. Proyecto en mejora continua.
+        </p>
       </div>
     </>
   );

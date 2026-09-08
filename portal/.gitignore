@@ -45,3 +45,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /e2e/__screenshots__/
+
+# scripts de un solo uso (cargas, pruebas contra la base)
+scripts/tmp/

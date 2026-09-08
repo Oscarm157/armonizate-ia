@@ -8,8 +8,9 @@
 
 import { cargarImagen } from "./landmarks";
 
+import { LEGAL_IMAGEN_1, LEGAL_IMAGEN_2 } from "../legal";
+
 const SITIO = "clinicaarmonizate.mx";
-const AVISO = "Simulación generada con inteligencia artificial · El resultado final puede variar";
 
 const INDIGO = "#4D4E93";
 
@@ -67,6 +68,24 @@ function logoEnBlanco(altoLogo: number): HTMLCanvasElement | null {
   return c;
 }
 
+/**
+ * Marca de agua: el logo grande al centro, muy tenue.
+ *
+ * Marca la imagen sin taparla. No impide que alguien la recorte, pero sí que se reuse
+ * como si fuera una fotografía de resultado real de otra clínica.
+ */
+function marcaDeAgua(ctx: CanvasRenderingContext2D, ancho: number, alto: number) {
+  const lg = logoEnBlanco(alto * 0.16);
+  if (!lg) return;
+  const escala = Math.min(1, (ancho * 0.62) / lg.width);
+  const w = lg.width * escala;
+  const h = lg.height * escala;
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.drawImage(lg, (ancho - w) / 2, (alto - h) / 2, w, h);
+  ctx.restore();
+}
+
 function pintarPie(ctx: CanvasRenderingContext2D, ancho: number, y: number, alto: number) {
   ctx.fillStyle = INDIGO;
   ctx.fillRect(0, y, ancho, alto);
@@ -86,7 +105,13 @@ function pintarPie(ctx: CanvasRenderingContext2D, ancho: number, y: number, alto
 
   ctx.fillStyle = "rgba(255,255,255,0.62)";
   ctx.font = `400 ${Math.round(alto * 0.082)}px ${familia()}`;
-  ctx.fillText(AVISO, centro, y + alto * 0.87, ancho * 0.94);
+  ctx.fillText(LEGAL_IMAGEN_2, centro, y + alto * 0.9, ancho * 0.94);
+
+  // El aviso de que no es una promesa va arriba del todo y en mayúsculas: es lo que
+  // evita que alguien vuelva con la imagen diciendo que se le prometió un resultado.
+  ctx.fillStyle = "rgba(255,255,255,0.9)";
+  ctx.font = `600 ${Math.round(alto * 0.1)}px ${familia()}`;
+  ctx.fillText(LEGAL_IMAGEN_1, centro, y + alto * 0.09, ancho * 0.94);
 }
 
 function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number, y: number, ancho: number) {
@@ -108,6 +133,7 @@ export function soloSimulacion(simulacion: HTMLCanvasElement): HTMLCanvasElement
   const pie = Math.round(simulacion.width * 0.42);
   const [c, ctx] = lienzo(simulacion.width, simulacion.height + pie);
   ctx.drawImage(simulacion, 0, 0);
+  marcaDeAgua(ctx, simulacion.width, simulacion.height);
   pintarPie(ctx, c.width, simulacion.height, pie);
   return c;
 }
@@ -128,6 +154,7 @@ export function actualYSimulacion(
   ctx.drawImage(actual, 0, 0, w, h);
   ctx.drawImage(simulacion, w + sep, 0, w, h);
 
+  marcaDeAgua(ctx, c.width, h);
   pintarEtiqueta(ctx, "ACTUAL", 0, 0, w);
   // "Simulación" y no "Después": decir después sobre una imagen generada promete un
   // resultado, y esta foto se reenvía sola sin nadie que la explique.
