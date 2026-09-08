@@ -76,14 +76,14 @@ function Tarjeta({
   };
 
   return (
-    <li className="crm-card overflow-hidden">
+    <li className="overflow-hidden rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)]">
       <button
         type="button"
         onClick={() => onAbrir({ id: ultima.id, telefono: prospecto.telefono })}
         className="group relative block w-full"
         aria-label={`Abrir el caso de ${prospecto.telefono}`}
       >
-        <span className="grid grid-cols-2 gap-px bg-[var(--crm-line)]">
+        <span className="grid grid-cols-2 gap-px bg-[var(--crm-surface-3)]">
           {(["antes", "despues"] as const).map((cual) => (
             <span key={cual} className="relative block aspect-[3/4] bg-[var(--crm-surface-3)]">
               {cual === "despues" && !ultima.despuesUrl ? (

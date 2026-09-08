@@ -21,10 +21,16 @@ export default async function SimuladorPage() {
         actions={
           // La cuota vive aquí y no junto al formulario: ahí se leía como el avance de
           // la simulación en curso. Es información de la cuenta, no del trabajo.
-          <span
-            className={`crm-num text-[13px] ${poco ? "text-[var(--crm-danger)]" : "text-[var(--crm-ink-mute)]"}`}
-          >
-            {usadas} de {TOPE_MENSUAL} este mes
+          <span className="text-right">
+            <span
+              className={`crm-num block text-[26px] font-light leading-none ${
+                poco ? "text-[var(--crm-danger)]" : "text-[var(--crm-ink)]"
+              }`}
+            >
+              {usadas}
+              <span className="text-[var(--crm-ink-faint)]"> / {TOPE_MENSUAL}</span>
+            </span>
+            <span className="crm-eyebrow mt-2 block">Simulaciones este mes</span>
           </span>
         }
       />

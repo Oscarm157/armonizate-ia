@@ -76,7 +76,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: var(--font-montserrat);
+  --font-sans: var(--font-poppins);
   --font-mono: ui-monospace, SFMono-Regular, monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -168,13 +168,15 @@
   --input: var(--crm-line-strong);
   --ring: var(--crm-accent-ring);
   --radius: 0.5rem;
-  --sidebar: var(--crm-surface);
-  --sidebar-foreground: var(--crm-ink-soft);
+  /* El sidebar comparte el lienzo: sin caja blanca ni borde, se separa por aire.
+     Con fondo propio y pastillas de fondo se leía como consola genérica. */
+  --sidebar: var(--crm-bg);
+  --sidebar-foreground: var(--crm-ink-mute);
   --sidebar-primary: var(--crm-accent);
   --sidebar-primary-foreground: var(--crm-on-accent);
-  --sidebar-accent: var(--crm-accent-tint);
-  --sidebar-accent-foreground: var(--crm-accent-strong);
-  --sidebar-border: var(--crm-line);
+  --sidebar-accent: transparent;
+  --sidebar-accent-foreground: var(--crm-ink);
+  --sidebar-border: transparent;
   --sidebar-ring: var(--crm-accent-ring);
 
   background: var(--crm-bg);
@@ -209,15 +211,16 @@
 }
 /* La serif nunca en negrita: peso 400 a cualquier tamaño. Esa contención es la firma
    del sistema; en cuanto se pone en bold se vuelve una plantilla más. */
+/* El display va en peso ligero, no en negrita. Un título de 44px en light con el
+   tracking cerrado se lee caro; el mismo en bold se lee a plantilla. */
 .crm-display {
-  font-family: var(--font-display), ui-serif, Georgia, serif;
-  font-weight: 400;
-  font-size: 34px;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-weight: 300;
+  font-size: 46px;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
   color: var(--crm-ink);
 }
-@media (max-width: 640px) { .crm-display { font-size: 26px; } }
+@media (max-width: 640px) { .crm-display { font-size: 32px; letter-spacing: -0.03em; } }
 .crm-eyebrow {
   font-size: 11px;
   font-weight: 600;
@@ -238,6 +241,43 @@
   background: var(--crm-surface);
   border-radius: var(--crm-r-lg);
 }
+/* Navegación: tipográfica y sin cajas. El activo se marca con una barra fina y
+   tinta fuerte, no con un relleno; el relleno es lo que la vuelve una consola. */
+[data-sidebar="menu-button"] {
+  height: auto !important;
+  padding: 0.5rem 0 0.5rem 0.75rem !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  border-radius: 0 !important;
+  border-left: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+[data-sidebar="menu-button"][data-active="true"] {
+  color: var(--crm-ink) !important;
+  border-left-color: var(--crm-accent);
+  font-weight: 500 !important;
+}
+[data-sidebar="group-label"] {
+  font-size: 10.5px !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--crm-ink-faint) !important;
+  margin-bottom: 0.35rem;
+}
+[data-sidebar="sidebar"] {
+  padding: 0.5rem 0.75rem;
+  background: var(--crm-bg) !important;
+  border-right: 0 !important;
+}
+/* Los iconos de la navegación estorban: la jerarquía la da la tipografía. */
+[data-sidebar="menu-button"] > svg { display: none; }
+
+/* La mesa de trabajo: una sola superficie donde ocurre todo. */
+.crm-mesa {
+  background: var(--crm-surface);
+  border-radius: var(--crm-r-xl);
+}
+
 /* Lo único que flota: el resultado de la simulación. */
 .crm-flotante {
   background: var(--crm-surface);

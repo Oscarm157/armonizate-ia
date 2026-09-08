@@ -23,13 +23,13 @@ export function Entregas({
 
   return (
     <>
-      <div className="mt-6 border-t border-[var(--crm-line)] pt-5">
+      <div>
         <p className="crm-eyebrow mb-3">Material para el paciente</p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           {entregas.map((e) => (
             <div
               key={e.clave}
-              className="crm-card overflow-hidden"
+              className="overflow-hidden rounded-[var(--crm-r-md)] bg-[var(--crm-surface-3)]"
             >
               <button
                 type="button"
@@ -38,7 +38,7 @@ export function Entregas({
                 className="group relative block w-full bg-[var(--crm-surface-3)]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={e.dataUrl} alt={e.titulo} className="max-h-56 w-full object-contain" />
+                <img src={e.dataUrl} alt={e.titulo} className="max-h-40 w-full object-contain" />
                 <span className="absolute inset-0 grid place-items-center bg-[var(--crm-ink)]/0 transition-colors group-hover:bg-[var(--crm-ink)]/25">
                   <Maximize2 className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
                 </span>

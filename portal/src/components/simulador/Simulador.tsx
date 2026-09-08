@@ -170,193 +170,194 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
   const paso = !original ? 1 : !datosListos ? 2 : estado === "hecho" ? 3 : 2;
 
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
-      <div>
-        {/* Lienzo acotado en alto: si ocupa toda la pantalla, el campo del celular y
-            el botón quedan bajo el pliegue y hay que ir a buscarlos. */}
-        <div className={`relative mx-auto w-full overflow-hidden rounded-[var(--crm-r-lg)] ${
-            original ? "aspect-[4/5] max-h-[46dvh] lg:max-h-[560px]" : "aspect-[5/4] max-h-[38dvh] lg:max-h-[360px]"
-          } ${estado === "hecho" ? "crm-flotante" : "bg-[var(--crm-surface-2)]"}`}>
-          {!original && (
-            <label
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const f = e.dataTransfer.files?.[0];
-                if (f) cargar(f);
-              }}
-              className="crm-dropzone flex h-full w-full cursor-pointer flex-col items-center justify-center gap-3 px-6 text-center"
-            >
-              <span className="grid size-14 place-items-center rounded-full bg-[var(--crm-accent)] text-[var(--crm-on-accent)]">
-                <ImageUp className="size-6" strokeWidth={1.75} />
-              </span>
-              <span className="text-[15px] font-semibold text-[var(--crm-ink)]">
-                Fotografía del paciente
-              </span>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
+    <>
+      {/* Una sola mesa de trabajo: la fotografía y el control comparten superficie.
+          Dos cajas sueltas lado a lado se leían como formulario de plantilla. */}
+      <div className="crm-mesa grid overflow-hidden lg:grid-cols-[1fr_360px]">
+        {/* Fotografía */}
+        <div className="relative">
+          <div
+            className={`relative w-full overflow-hidden ${
+              original
+                ? "aspect-[4/5] max-h-[46dvh] bg-[var(--crm-surface-3)] lg:max-h-[560px]"
+                : "aspect-[5/4] max-h-[34dvh] bg-[var(--crm-accent)] lg:max-h-[420px]"
+            }`}
+          >
+            {!original && (
+              <label
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const f = e.dataTransfer.files?.[0];
                   if (f) cargar(f);
                 }}
-              />
-            </label>
-          )}
+                className="group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-4 px-8 text-center transition-colors hover:bg-[var(--crm-accent-soft)]"
+              >
+                <span className="grid size-14 place-items-center rounded-full border border-white/35 text-white transition-transform group-hover:scale-105">
+                  <ImageUp className="size-6" strokeWidth={1.5} />
+                </span>
+                <span className="text-[19px] font-light text-white">Fotografía del paciente</span>
+                <span className="max-w-[34ch] text-[13px] leading-relaxed text-white/70">
+                  Arrastre la imagen o toque para elegirla desde el teléfono
+                </span>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) cargar(f);
+                  }}
+                />
+              </label>
+            )}
 
-          {/* El contraste es lo que vende: antes solo se veía bajando la imagen. */}
-          {estado === "hecho" && original && resultado && (
-            <>
-              <ReactCompareSlider
-                className="h-full w-full"
-                itemOne={<ReactCompareSliderImage src={original} alt="Actual" style={{ objectFit: "contain" }} />}
-                itemTwo={<ReactCompareSliderImage src={resultado} alt="Simulación" style={{ objectFit: "contain" }} />}
-              />
-              <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-[var(--crm-ink)]/70 px-2.5 py-1 text-[11px] font-medium text-white">
-                Actual
-              </span>
-              <span className="pointer-events-none absolute right-3 bottom-3 rounded-full bg-[var(--crm-accent)] px-2.5 py-1 text-[11px] font-medium text-[var(--crm-on-accent)]">
-                Simulación
-              </span>
-            </>
-          )}
+            {estado === "hecho" && original && resultado && (
+              <>
+                <ReactCompareSlider
+                  className="h-full w-full"
+                  itemOne={<ReactCompareSliderImage src={original} alt="Actual" style={{ objectFit: "contain" }} />}
+                  itemTwo={<ReactCompareSliderImage src={resultado} alt="Simulación" style={{ objectFit: "contain" }} />}
+                />
+                <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-[var(--crm-ink)]/70 px-2.5 py-1 text-[11px] text-white">
+                  Actual
+                </span>
+                <span className="pointer-events-none absolute right-3 bottom-3 rounded-full bg-[var(--crm-accent)] px-2.5 py-1 text-[11px] text-[var(--crm-on-accent)]">
+                  Simulación
+                </span>
+              </>
+            )}
 
-          {estado !== "hecho" && original && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={original} alt="Fotografía" className="h-full w-full object-contain" />
-          )}
+            {estado !== "hecho" && original && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={original} alt="Fotografía del paciente" className="h-full w-full object-contain" />
+            )}
 
-          {estado === "generando" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--crm-ink)]/40">
-              <span className="rounded-full bg-[var(--crm-surface)] px-4 py-2 text-[13px] font-medium text-[var(--crm-ink)]">
-                Generando la simulación
-              </span>
-              <span className="text-[12px] text-white/85">Tarda alrededor de 15 segundos</span>
+            {estado === "generando" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[var(--crm-ink)]/35 backdrop-blur-[2px]">
+                <span className="rounded-full bg-[var(--crm-surface)] px-4 py-2 text-[13px] text-[var(--crm-ink)]">
+                  Generando la simulación
+                </span>
+                <span className="text-[12px] text-white/85">Tarda alrededor de 15 segundos</span>
+              </div>
+            )}
+          </div>
+
+          {estado === "hecho" && (
+            <div className="flex flex-col items-center gap-3 px-5 py-4">
+              <p className="text-[12.5px] text-[var(--crm-ink-mute)]">Deslice el control para comparar</p>
+              {simulacionId && (
+                <Calificar valor={null} onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
+              )}
             </div>
           )}
         </div>
 
-        {estado === "hecho" && (
-          <>
-            <p className="mt-2 text-center text-[12.5px] text-[var(--crm-ink-mute)]">
-              Deslice el control para comparar
-            </p>
-            {simulacionId && (
-              <div className="mt-5 flex justify-center">
-                <Calificar
-                  valor={null}
-                  onCalificar={(n) => calificarSimulacion(simulacionId, n)}
-                />
-              </div>
-            )}
-          </>
-        )}
+        {/* Control. Terminada la simulación, aquí manda el material: si se dejaran los
+            pasos ya cumplidos, lo que el asesor necesita quedaría bajo el pliegue. */}
+        <div className="border-t border-[var(--crm-line)] p-6 sm:p-7 lg:border-t-0 lg:border-l">
+          {estado === "hecho" && entregas.length > 0 ? (
+            <Entregas entregas={entregas} onDescargar={bajar} />
+          ) : (
+            <ol className="space-y-4">
+              <Paso n={1} activo={paso === 1} hecho={!!original} texto="Fotografía">
+                {!original && (
+                  <ul className="mt-2 space-y-1">
+                    {GUIA.map((g) => (
+                      <li key={g} className="text-[12.5px] text-[var(--crm-ink-mute)]">
+                        {g}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Paso>
 
-        {entregas.length > 0 && <Entregas entregas={entregas} onDescargar={bajar} />}
+              <Paso n={2} activo={paso === 2} hecho={datosListos} texto="Teléfono del paciente">
+                <input
+                  id="telefono"
+                  className="crm-input mt-2.5"
+                  inputMode="tel"
+                  placeholder="10 dígitos"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  disabled={estado === "generando"}
+                />
+              </Paso>
+
+              <Paso n={3} activo={paso === 3} hecho={estado === "hecho"} texto="Generar y enviar" />
+            </ol>
+          )}
+
+          {error && (
+            <p
+              className="mt-5 flex items-start gap-2 rounded-[var(--crm-r-sm)] bg-[var(--crm-danger)]/8 px-3 py-2.5 text-[13px] text-[var(--crm-ink)]"
+              role="alert"
+            >
+              <AlertCircle className="mt-px size-4 shrink-0 text-[var(--crm-danger)]" />
+              {error}
+            </p>
+          )}
+
+          {agotado && !error && (
+            <p className="mt-5 rounded-[var(--crm-r-sm)] bg-[var(--crm-danger)]/8 px-3 py-2.5 text-[13px] text-[var(--crm-ink)]">
+              Alcanzó el límite de {tope} simulaciones de este mes. Se restablece el día 1.
+            </p>
+          )}
+
+          <div className="mt-6 flex flex-col gap-2.5">
+            {estado !== "generando" && estado !== "hecho" && original && (
+              <button
+                onClick={generar}
+                disabled={!datosListos || agotado}
+                className="crm-btn crm-btn-primary w-full justify-center"
+              >
+                <Sparkles className="size-4" /> Generar simulación
+              </button>
+            )}
+
+            {estado === "generando" && (
+              <button disabled className="crm-btn crm-btn-primary w-full justify-center">
+                <Sparkles className="size-4 animate-pulse" /> Generando…
+              </button>
+            )}
+
+            {original && (
+              <button onClick={reiniciar} className="crm-btn crm-btn-secondary w-full justify-center">
+                Cargar otra fotografía
+              </button>
+            )}
+
+            {/* Repetir queda discreto: entre corridas el resultado apenas cambia y como
+                botón invita a gastar cuota persiguiendo una mejora que no llega. */}
+            {estado === "hecho" && repeticiones < 1 && !agotado && (
+              <button
+                onClick={() => {
+                  setRepeticiones((n) => n + 1);
+                  generar();
+                }}
+                className="mx-auto mt-1 flex items-center gap-1.5 text-[12.5px] text-[var(--crm-ink-faint)] underline underline-offset-4 hover:text-[var(--crm-ink-mute)]"
+              >
+                <RotateCcw className="size-3.5" /> Generar otra vez
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Control */}
-      <div className="lg:sticky lg:top-20">
-        <ol className="space-y-3.5">
-          <Paso n={1} activo={paso === 1} hecho={!!original} texto="Fotografía">
-            {!original && (
-              <ul className="mt-2 space-y-1">
-                {GUIA.map((g) => (
-                  <li key={g} className="flex gap-1.5 text-[12.5px] text-[var(--crm-ink-mute)]">
-                    <span className="text-[var(--crm-accent)]">·</span>
-                    {g}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Paso>
-
-          <Paso n={2} activo={paso === 2} hecho={datosListos} texto="Teléfono del paciente">
-            <input
-              id="telefono"
-              className="crm-input mt-2"
-              inputMode="tel"
-              placeholder="10 dígitos"
-              value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
-              disabled={estado === "generando"}
-            />
-          </Paso>
-
-          <Paso n={3} activo={paso === 3} hecho={estado === "hecho"} texto="Generar y enviar" />
-        </ol>
-
-        {error && (
-          <p
-            className="mt-4 flex items-start gap-2 rounded-[var(--crm-r-md)] border border-[var(--crm-danger)]/35 bg-[var(--crm-danger)]/8 px-3 py-2.5 text-[13px] text-[var(--crm-ink)]"
-            role="alert"
-          >
-            <AlertCircle className="mt-px size-4 shrink-0 text-[var(--crm-danger)]" />
-            {error}
-          </p>
-        )}
-
-        {agotado && !error && (
-          <p className="mt-4 rounded-[var(--crm-r-md)] border border-[var(--crm-danger)]/35 bg-[var(--crm-danger)]/8 px-3 py-2.5 text-[13px] text-[var(--crm-ink)]">
-            Alcanzó el límite de {tope} simulaciones de este mes. Se restablece el día 1.
-          </p>
-        )}
-
-        <div className="mt-5 flex flex-col gap-2.5">
-          {estado !== "generando" && estado !== "hecho" && original && (
-            <button
-              onClick={generar}
-              disabled={!datosListos || agotado}
-              className="crm-btn crm-btn-primary w-full justify-center"
-            >
-              <Sparkles className="size-4" /> Generar simulación
-            </button>
-          )}
-
-          {estado === "generando" && (
-            <button disabled className="crm-btn crm-btn-primary w-full justify-center">
-              <Sparkles className="size-4 animate-pulse" /> Generando…
-            </button>
-          )}
-
-          {original && (
-            <button onClick={reiniciar} className="crm-btn crm-btn-secondary w-full justify-center">
-              Cargar otra fotografía
-            </button>
-          )}
-
-          {/* Repetir queda discreto a propósito: entre corridas el resultado apenas
-              cambia, y tenerlo como botón invita a gastar cuota persiguiendo una
-              mejora que no llega. */}
-          {estado === "hecho" && repeticiones < 1 && !agotado && (
-            <button
-              onClick={() => {
-                setRepeticiones((n) => n + 1);
-                generar();
-              }}
-              className="mx-auto mt-1 flex items-center gap-1.5 text-[12.5px] text-[var(--crm-ink-faint)] underline underline-offset-4 hover:text-[var(--crm-ink-mute)]"
-            >
-              <RotateCcw className="size-3.5" /> Generar otra vez
-            </button>
-          )}
-        </div>
-
-        <p className="mt-8 border-t border-[var(--crm-line)] pt-4 text-[12px] leading-relaxed text-[var(--crm-ink-mute)]">
+      <div className="mt-5 flex flex-col gap-1.5 px-1 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
+        <p>
           Ambas imágenes se entregan con el aviso impreso de que son una simulación y de que el
           resultado final puede variar.
         </p>
         {/* "Calibrado" y no "entrenado": el modelo que corre es nano-banana con el prompt
             ajustado contra esos casos, no el LoRA. Es cierto y se sostiene si preguntan. */}
-        <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
-          Calibrado con más de 100 casos reales de Otomodelación Belab. Proyecto en mejora
-          continua.
-        </p>
+        <p>Calibrado con más de 100 casos reales de Otomodelación Belab. Proyecto en mejora continua.</p>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -370,18 +371,18 @@ function Paso({
   children?: React.ReactNode;
 }) {
   return (
-    <li className={activo || hecho ? "" : "opacity-45"}>
-      <div className="flex items-center gap-2">
+    <li className={activo || hecho ? "" : "opacity-35"}>
+      <div className="flex items-baseline gap-3">
+        {/* Número en tipografía, no en circulito: el circulito numerado es el detalle
+            que más delata una interfaz de plantilla. */}
         <span
-          className={`grid size-5 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${
-            hecho
-              ? "bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
-              : "border border-[var(--crm-line-strong)] text-[var(--crm-ink-mute)]"
+          className={`w-4 shrink-0 text-[15px] font-light tabular-nums ${
+            hecho ? "text-[var(--crm-accent)]" : "text-[var(--crm-ink-faint)]"
           }`}
         >
-          {hecho ? <Check className="size-3" strokeWidth={3} /> : n}
+          {hecho ? <Check className="size-3.5" strokeWidth={2.5} /> : n}
         </span>
-        <span className="text-[13.5px] font-medium text-[var(--crm-ink)]">{texto}</span>
+        <span className="text-[14.5px] text-[var(--crm-ink)]">{texto}</span>
       </div>
       {children ? <div className="pl-7">{children}</div> : null}
     </li>
