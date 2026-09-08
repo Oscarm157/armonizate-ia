@@ -1,5 +1,6 @@
 import { pgTable, uuid, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import type { Sede } from "./sedes";
+import type { Grado } from "./simulador/grado";
 
 export type UserRole = "admin" | "agent" | "viewer";
 
@@ -67,6 +68,11 @@ export const simulaciones = pgTable("simulaciones", {
   token: text("token").unique(),
   expiraEn: timestamp("expira_en", { withTimezone: true }),
 
+  // Qué tan separadas venían las orejas, según el asesor. Es lo que decide qué prompt
+  // se manda: la corrección no puede ser la misma para unas orejas muy abiertas que
+  // para una separación mínima. Nulo en las filas anteriores a que existiera el grado.
+  grado: text("grado").$type<Grado>(),
+
   calificacion: integer("calificacion"),
   modelo: text("modelo"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow(),
@@ -88,6 +94,7 @@ export const validaciones = pgTable("validaciones", {
   realPathname: text("real_pathname").notNull(),
   simuladaUrl: text("simulada_url"),
   simuladaPathname: text("simulada_pathname"),
+  grado: text("grado").$type<Grado>(),
   calificacion: integer("calificacion"),
   modelo: text("modelo"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow(),

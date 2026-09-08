@@ -7,6 +7,7 @@ import { cargarImagen, detectar } from "@/lib/simulador/landmarks";
 import { cajaCabeza } from "@/lib/simulador/geometria";
 import { componer } from "@/lib/simulador/componer";
 import { aDataUrl, precargarLogo, reducir } from "@/lib/simulador/entrega";
+import { GRADOS, type Grado } from "@/lib/simulador/grado";
 
 type Foto = { url: string; img: HTMLImageElement };
 
@@ -21,6 +22,7 @@ export function NuevoCaso() {
   const [antes, setAntes] = useState<Foto | null>(null);
   const [real, setReal] = useState<Foto | null>(null);
   const [etiqueta, setEtiqueta] = useState("");
+  const [grado, setGrado] = useState<Grado | null>(null);
   const [corriendo, setCorriendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -43,7 +45,7 @@ export function NuevoCaso() {
   }, []);
 
   const correr = async () => {
-    if (!antes || !real) return;
+    if (!antes || !real || !grado) return;
     setCorriendo(true);
     setError(null);
     try {
@@ -63,6 +65,7 @@ export function NuevoCaso() {
           cabeza: c.toDataURL("image/jpeg", 0.95),
           antes: antes.url,
           real: real.url,
+          grado,
           etiqueta: etiqueta.trim() || undefined,
         }),
       });
@@ -82,6 +85,7 @@ export function NuevoCaso() {
       setAntes(null);
       setReal(null);
       setEtiqueta("");
+      setGrado(null);
       formRef.current?.reset();
       router.refresh();
     } catch (e) {
@@ -118,10 +122,31 @@ export function NuevoCaso() {
             onChange={(e) => setEtiqueta(e.target.value)}
             disabled={corriendo}
           />
+          {/* El mismo grado que elige el asesor: sin esto la comparación no mide nada,
+              porque estaría comparando el resultado real contra otra corrección. */}
+          <div className="flex gap-1.5" role="radiogroup" aria-label="Grado del caso">
+            {GRADOS.map((g) => (
+              <button
+                key={g.valor}
+                type="button"
+                role="radio"
+                aria-checked={grado === g.valor}
+                title={g.pie}
+                onClick={() => setGrado(g.valor)}
+                disabled={corriendo}
+                className={`crm-btn crm-btn-sm flex-1 justify-center ${
+                  grado === g.valor ? "crm-btn-primary" : "crm-btn-secondary"
+                }`}
+              >
+                {g.titulo.replace("Grado ", "")}
+              </button>
+            ))}
+          </div>
+
           <button
             type="button"
             onClick={correr}
-            disabled={!antes || !real || corriendo}
+            disabled={!antes || !real || !grado || corriendo}
             className="crm-btn crm-btn-primary w-full justify-center"
           >
             <Sparkles className={`size-4 ${corriendo ? "animate-pulse" : ""}`} />

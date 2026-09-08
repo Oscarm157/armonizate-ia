@@ -24,6 +24,8 @@ const bodySchema = z.object({
   original: z.string().regex(DATA_URL, "Imagen inválida."),
   correo: z.string().trim().email("Correo inválido.").max(120),
   vambe: z.string().trim().url("El enlace de Vambe no es válido.").max(400),
+  // Sin grado no se genera: es lo que decide cuánta corrección se aplica.
+  grado: z.enum(["alto", "medio", "bajo"]),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
     datos = await parseJson(bodySchema, request);
   } catch {
     return NextResponse.json(
-      { error: "Revise la fotografía, el correo y el enlace de Vambe." },
+      { error: "Revise la fotografía, el grado, el correo y el enlace de Vambe." },
       { status: 400 }
     );
   }
@@ -96,6 +98,7 @@ export async function POST(request: Request) {
       prospectoCorreo: correo,
       prospectoVambe: datos.vambe,
       sede: me.sede,
+      grado: datos.grado,
       modelo: MODELO,
       antesUrl: antes.url,
       antesPathname: antes.pathname,
@@ -105,7 +108,7 @@ export async function POST(request: Request) {
     })
     .returning({ id: simulaciones.id, token: simulaciones.token });
 
-  const res = await generar(datos.cabeza, REPLICATE_API_TOKEN);
+  const res = await generar(datos.cabeza, datos.grado, REPLICATE_API_TOKEN);
   if ("error" in res) return NextResponse.json({ error: res.error, id: fila.id }, { status: 502 });
 
   return NextResponse.json({

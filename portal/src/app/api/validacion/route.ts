@@ -19,6 +19,7 @@ const bodySchema = z.object({
   antes: z.string().regex(DATA_URL, "Imagen inválida."),
   real: z.string().regex(DATA_URL, "Imagen inválida."),
   etiqueta: z.string().trim().max(80).optional(),
+  grado: z.enum(["alto", "medio", "bajo"]),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
   try {
     datos = await parseJson(bodySchema, request);
   } catch {
-    return NextResponse.json({ error: "Revise las dos fotografías." }, { status: 400 });
+    return NextResponse.json({ error: "Revise las dos fotografías y el grado." }, { status: 400 });
   }
 
   const { REPLICATE_API_TOKEN } = serverEnv();
@@ -67,11 +68,12 @@ export async function POST(request: Request) {
       antesPathname: antes.pathname,
       realUrl: real.url,
       realPathname: real.pathname,
+      grado: datos.grado,
       modelo: MODELO,
     })
     .returning({ id: validaciones.id });
 
-  const res = await generar(datos.cabeza, REPLICATE_API_TOKEN);
+  const res = await generar(datos.cabeza, datos.grado, REPLICATE_API_TOKEN);
   if ("error" in res) {
     console.error("[validacion] el modelo falló", { id: fila.id, usuario: me.id, error: res.error });
     return NextResponse.json({ error: res.error, id: fila.id }, { status: 502 });
