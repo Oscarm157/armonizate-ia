@@ -24,21 +24,21 @@ export function Entregas({
   return (
     <>
       <div className="mt-6 border-t border-[var(--crm-line)] pt-5">
-        <p className="crm-eyebrow mb-3">Listas para mandar</p>
+        <p className="crm-eyebrow mb-3">Material para el paciente</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {entregas.map((e) => (
             <div
               key={e.clave}
-              className="overflow-hidden rounded-[var(--crm-r-lg)] border border-[var(--crm-line)] bg-[var(--crm-surface)]"
+              className="crm-card overflow-hidden"
             >
               <button
                 type="button"
                 onClick={() => setAbierta(e)}
-                aria-label={`Ver ${e.titulo} en grande`}
+                aria-label={`Abrir ${e.titulo}`}
                 className="group relative block w-full bg-[var(--crm-surface-3)]"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={e.dataUrl} alt={e.titulo} className="max-h-52 w-full object-contain" />
+                <img src={e.dataUrl} alt={e.titulo} className="max-h-56 w-full object-contain" />
                 <span className="absolute inset-0 grid place-items-center bg-[var(--crm-ink)]/0 transition-colors group-hover:bg-[var(--crm-ink)]/25">
                   <Maximize2 className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
                 </span>
@@ -65,7 +65,7 @@ export function Entregas({
             <img
               src={abierta.dataUrl}
               alt={abierta.titulo}
-              className="max-h-[70dvh] w-full rounded-[var(--crm-r-md)] object-contain"
+              className="max-h-[70dvh] w-full rounded-[var(--crm-r-img)] object-contain"
             />
             <button
               onClick={() => onDescargar(abierta.clave)}

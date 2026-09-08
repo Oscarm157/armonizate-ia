@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Instrument_Serif, Montserrat } from "next/font/google";
 import "./globals.css";
 import { BotIdClient } from "botid/client";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,6 +16,16 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
+// Serif editorial solo para los títulos de vista, siempre en peso 400. El sitio
+// público sigue siendo todo Montserrat; esto es una herramienta interna y el
+// contraste entre la serif y el sans es lo que la saca de verse a plantilla.
+const serif = Instrument_Serif({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Simulador · Clínica Armonízate",
   description: "Herramienta interna de simulación de otomodelación.",
@@ -24,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={`${montserrat.variable} h-full antialiased`}>
+    <html lang="es" className={`${montserrat.variable} ${serif.variable} h-full antialiased`}>
       <head>
         <BotIdClient protect={PROTEGIDO} />
       </head>

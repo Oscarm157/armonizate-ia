@@ -80,31 +80,40 @@ export async function componer(
   original: HTMLImageElement,
   generada: HTMLImageElement
 ): Promise<HTMLCanvasElement | null> {
-  const ancho = original.naturalWidth;
-  const alto = original.naturalHeight;
-
-  const [cBase, base] = lienzo(ancho, alto);
-  base.drawImage(original, 0, 0);
-
   const ptsOriginal = await detectar(original);
   const ptsGenerada = await detectar(generada);
   if (!ptsOriginal || !ptsGenerada) return null;
 
+  // El lienzo se hace del mayor entre la foto original y lo que devolvió el modelo.
+  // Al modelo se le pide 2K: si se compusiera al tamaño de la original, ese detalle se
+  // tiraría al reescalar hacia abajo y la entrega saldría a la resolución de entrada.
+  const escala = Math.max(1, Math.min(2.5, generada.naturalHeight / original.naturalHeight));
+  const ancho = Math.round(original.naturalWidth * escala);
+  const alto = Math.round(original.naturalHeight * escala);
+
+  const [cBase, base] = lienzo(ancho, alto);
+  base.imageSmoothingQuality = "high";
+  base.drawImage(original, 0, 0, ancho, alto);
+
+  // Los puntos de la original vienen en sus propios píxeles: se llevan al lienzo.
+  const pts = ptsOriginal.map((p) => ({ x: p.x * escala, y: p.y * escala }));
+
   // El modelo reencuadra aunque se le prohíba: aquí se devuelve al encuadre original.
   const m = similitud(
     RIGIDOS.map((i) => ptsGenerada[i]),
-    RIGIDOS.map((i) => ptsOriginal[i])
+    RIGIDOS.map((i) => pts[i])
   );
   if (!m) return null;
 
   const [, alineada] = lienzo(ancho, alto);
+  alineada.imageSmoothingQuality = "high";
   alineada.setTransform(m.a, m.b, -m.b, m.a, m.tx, m.ty);
   alineada.drawImage(generada, 0, 0);
   alineada.setTransform(1, 0, 0, 1, 0, 0);
-  igualarExposicion(alineada, base, ptsOriginal, ancho, alto);
+  igualarExposicion(alineada, base, pts, ancho, alto);
 
   const [cMascara, mascara] = lienzo(ancho, alto);
-  pintarBandaOrejas(mascara, ptsOriginal, ancho, alto);
+  pintarBandaOrejas(mascara, pts, ancho, alto);
 
   // Recorta la imagen alineada a la banda de las orejas...
   alineada.globalCompositeOperation = "destination-in";

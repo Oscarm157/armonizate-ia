@@ -4,11 +4,7 @@ import { getAllUsers, consumoDelEquipo, TOPE_MENSUAL } from "@/lib/datos";
 import { canManageUsers } from "@/lib/permissions";
 import { fmtDate } from "@/lib/crm-format";
 import { AddUserModal } from "@/components/crm/AddUserModal";
-import {
-  UserRowActions,
-  UserRoleSelect,
-  ROLE_LABELS,
-} from "@/components/crm/UserRowActions";
+import { UserRowActions, UserRoleSelect } from "@/components/crm/UserRowActions";
 import { Breadcrumb } from "@/components/crm/Breadcrumb";
 import { PageHeader } from "@/components/crm/PageShell";
 import { KeyFacts } from "@/components/crm/KeyFacts";
@@ -25,9 +21,7 @@ export default async function UsersPage() {
   const all = await getAllUsers();
   const consumo = await consumoDelEquipo();
   const activeCount = all.filter((u) => u.active).length;
-  const adminCount = all.filter((u) => u.role === "admin").length;
   const agentCount = all.filter((u) => u.role === "agent").length;
-  const viewerCount = all.filter((u) => u.role === "viewer").length;
 
   const num = (n: number) => <span className="crm-num">{n}</span>;
 
@@ -39,7 +33,7 @@ export default async function UsersPage() {
         <PageHeader
           eyebrow="Equipo"
           title="Usuarios"
-          description="Da de alta vendedores, asigna roles y revisa cuántas simulaciones lleva cada uno este mes."
+          description="Alta de asesores, asignación de rol y sede, y consumo de cada uno en el mes."
           actions={<AddUserModal />}
         />
       </div>
@@ -47,20 +41,13 @@ export default async function UsersPage() {
       <div className="mb-5">
         <KeyFacts
           items={[
-            { label: "Personas", value: num(all.length) },
+            { label: "Cuentas", value: num(all.length) },
+            { label: "Activas", value: num(activeCount) },
+            { label: "Asesores", value: num(agentCount) },
             {
-              label: "Activas",
-              value: (
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-[var(--crm-accent)] shadow-[0_0_0_2px_var(--crm-surface)]" />
-                  {num(activeCount)}
-                </span>
-              ),
+              label: "Simulaciones del equipo",
+              value: num([...consumo.values()].reduce((a, b) => a + b, 0)),
             },
-            { label: "Inactivas", value: num(all.length - activeCount) },
-            { label: ROLE_LABELS.admin, value: num(adminCount) },
-            { label: ROLE_LABELS.agent, value: num(agentCount) },
-            { label: ROLE_LABELS.viewer, value: num(viewerCount) },
           ]}
         />
       </div>

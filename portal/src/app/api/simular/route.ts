@@ -9,7 +9,7 @@ import { canSimular } from "@/lib/permissions";
 import { consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
 import { serverEnv } from "@/lib/env";
 import { parseJson } from "@/lib/validate";
-import { generar } from "@/lib/simulador/modelo";
+import { generar, MODELO } from "@/lib/simulador/modelo";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -88,6 +88,7 @@ export async function POST(request: Request) {
       userId: me.id,
       prospectoTelefono: datos.prospectoTelefono,
       sede: me.sede,
+      modelo: MODELO,
       antesUrl: antes.url,
       antesPathname: antes.pathname,
     })

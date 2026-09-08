@@ -6,7 +6,7 @@ const API = "https://api.replicate.com/v1";
 // Se compararon nano-banana pro, 2 y 2-lite con el mismo prompt sobre los mismos
 // casos: el 2 deja el contorno de la cabeza más limpio, es el que menos toca el
 // rostro y tarda unos 12 s contra 40 del pro.
-const MODELO = "google/nano-banana-2";
+export const MODELO = "google/nano-banana-2";
 
 /**
  * Texto final, el que Oscar validó a ojo contra los casos reales. Se copia literal y no

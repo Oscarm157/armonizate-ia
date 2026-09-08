@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import type { Sede } from "./sedes";
 
 export type UserRole = "admin" | "agent" | "viewer";
@@ -57,6 +57,11 @@ export const simulaciones = pgTable("simulaciones", {
   antesPathname: text("antes_pathname").notNull(),
   despuesUrl: text("despues_url"),
   despuesPathname: text("despues_pathname"),
+  // Del 1 al 5, cómo salió esta generación en particular. Sirve para medir si el
+  // modelo mejora cuando se cambie el prompt o el modelo, no para evaluar al asesor.
+  calificacion: integer("calificacion"),
+  // Qué modelo la generó: sin esto, comparar calificaciones entre versiones no dice nada.
+  modelo: text("modelo"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow(),
 });
 

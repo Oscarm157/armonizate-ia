@@ -44,13 +44,13 @@ export default async function ReportePage({
       <PageHeader
         eyebrow="Dirección"
         title="Ventas apoyadas por el simulador"
-        description={`Por plaza, en ${periodo}. Un prospecto cuenta una vez aunque tenga varias simulaciones.`}
+        description={`Por plaza, ${periodo}. Cada prospecto cuenta una sola vez, aunque tenga varias simulaciones.`}
       />
 
       {filas.length === 0 ? (
-        <Empty title="Sin actividad este mes" hint="Cuando el equipo genere simulaciones, aparecerán aquí por plaza." />
+        <Empty title="Sin actividad en el periodo" hint="Las simulaciones del equipo aparecerán aquí desglosadas por plaza." />
       ) : (
-        <div className="overflow-hidden rounded-[var(--crm-r-lg)] border border-[var(--crm-line)]">
+        <div className="crm-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="crm-table min-w-[680px]">
               <thead className="crm-thead">
@@ -60,7 +60,7 @@ export default async function ReportePage({
                   <th className="crm-th">Prospectos</th>
                   <th className="crm-th">Ganados</th>
                   <th className="crm-th">Perdidos</th>
-                  <th className="crm-th">Sin marcar</th>
+                  <th className="crm-th">Sin registrar</th>
                   <th className="crm-th">Cierre</th>
                 </tr>
               </thead>
@@ -92,8 +92,8 @@ export default async function ReportePage({
       )}
 
       <p className="mt-4 text-[12.5px] text-[var(--crm-ink-mute)]">
-        Los resultados los marca cada vendedor en su historial. Lo que está sin marcar todavía no
-        cuenta ni a favor ni en contra.
+        Cada asesor registra el resultado en su historial. Lo que está sin registrar no cuenta ni
+        a favor ni en contra.
       </p>
     </div>
   );

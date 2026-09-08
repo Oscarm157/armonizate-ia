@@ -8,8 +8,8 @@
 
 import { cargarImagen } from "./landmarks";
 
-const AVISO_1 = "Previsualización generada con IA";
-const AVISO_2 = "Los resultados finales pueden variar";
+const AVISO_1 = "Simulación generada con inteligencia artificial";
+const AVISO_2 = "El resultado final puede variar";
 
 const TINTA = "#121333";
 const INDIGO = "#4c4e98";
@@ -77,33 +77,35 @@ function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number,
   ctx.fillText(texto, x + ancho * 0.035 + anchoCaja / 2, y + ancho * 0.035 + alto / 2);
 }
 
-/** Solo el después, con logo y aviso al pie. */
-export function soloDespues(despues: HTMLCanvasElement): HTMLCanvasElement {
-  const pie = Math.round(despues.width * 0.13);
-  const [c, ctx] = lienzo(despues.width, despues.height + pie);
-  ctx.drawImage(despues, 0, 0);
-  pintarPie(ctx, c.width, despues.height, pie);
+/** Solo la simulación, con logo y aviso al pie. */
+export function soloSimulacion(simulacion: HTMLCanvasElement): HTMLCanvasElement {
+  const pie = Math.round(simulacion.width * 0.13);
+  const [c, ctx] = lienzo(simulacion.width, simulacion.height + pie);
+  ctx.drawImage(simulacion, 0, 0);
+  pintarPie(ctx, c.width, simulacion.height, pie);
   return c;
 }
 
-/** Antes y después juntos, etiquetados, con logo y aviso al pie. */
-export function antesYDespues(
-  antes: HTMLImageElement,
-  despues: HTMLCanvasElement
+/** El estado actual y la simulación juntos, etiquetados, con logo y aviso al pie. */
+export function actualYSimulacion(
+  actual: HTMLImageElement,
+  simulacion: HTMLCanvasElement
 ): HTMLCanvasElement {
-  const w = despues.width;
-  const h = despues.height;
+  const w = simulacion.width;
+  const h = simulacion.height;
   const sep = Math.round(w * 0.018);
   const pie = Math.round(w * 0.115);
 
   const [c, ctx] = lienzo(w * 2 + sep, h + pie);
   ctx.fillStyle = LAVANDA;
   ctx.fillRect(0, 0, c.width, c.height);
-  ctx.drawImage(antes, 0, 0, w, h);
-  ctx.drawImage(despues, w + sep, 0, w, h);
+  ctx.drawImage(actual, 0, 0, w, h);
+  ctx.drawImage(simulacion, w + sep, 0, w, h);
 
-  pintarEtiqueta(ctx, "ANTES", 0, 0, w);
-  pintarEtiqueta(ctx, "DESPUÉS", w + sep, 0, w);
+  pintarEtiqueta(ctx, "ACTUAL", 0, 0, w);
+  // "Simulación" y no "Después": decir después sobre una imagen generada promete un
+  // resultado, y esta foto se reenvía sola sin nadie que la explique.
+  pintarEtiqueta(ctx, "SIMULACIÓN", w + sep, 0, w);
   pintarPie(ctx, c.width, h, pie);
   return c;
 }

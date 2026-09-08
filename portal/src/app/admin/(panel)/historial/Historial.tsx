@@ -6,9 +6,11 @@ import { Modal } from "@/components/crm/Modal";
 import { fmtDate } from "@/lib/crm-format";
 import type { ProspectoConSimulaciones } from "@/lib/datos";
 import { marcarResultado } from "./acciones";
+import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
+import { Calificar } from "@/components/simulador/Calificar";
 
 const ETIQUETA = {
-  pendiente: { texto: "Sin marcar", clase: "text-[var(--crm-ink-faint)]" },
+  pendiente: { texto: "Sin registrar", clase: "text-[var(--crm-ink-faint)]" },
   ganado: { texto: "Ganado", clase: "text-[var(--crm-accent)]" },
   perdido: { texto: "Perdido", clase: "text-[var(--crm-danger)]" },
 } as const;
@@ -27,7 +29,7 @@ export function Historial({ prospectos }: { prospectos: ProspectoConSimulaciones
       <Modal
         open={!!abierto}
         onClose={() => setAbierto(null)}
-        title={abierto ? `Prospecto ${abierto.telefono}` : undefined}
+        title={abierto ? abierto.telefono : undefined}
         maxWidth={900}
       >
         {abierto && (
@@ -37,11 +39,11 @@ export function Historial({ prospectos }: { prospectos: ProspectoConSimulaciones
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/admin/simulaciones/${abierto.id}/${cual}`}
-                  alt={cual === "antes" ? "Antes" : "Después"}
-                  className="w-full rounded-[var(--crm-r-md)] border border-[var(--crm-line)] object-contain"
+                  alt={cual === "antes" ? "Actual" : "Simulación"}
+                  className="w-full rounded-[var(--crm-r-img)] object-contain"
                 />
                 <figcaption className="mt-1.5 text-center text-[12px] text-[var(--crm-ink-mute)]">
-                  {cual === "antes" ? "Antes" : "Después"}
+                  {cual === "antes" ? "Actual" : "Simulación"}
                 </figcaption>
               </figure>
             ))}
@@ -74,26 +76,26 @@ function Tarjeta({
   };
 
   return (
-    <li className="overflow-hidden rounded-[var(--crm-r-lg)] border border-[var(--crm-line)] bg-[var(--crm-surface)]">
+    <li className="crm-card overflow-hidden">
       <button
         type="button"
         onClick={() => onAbrir({ id: ultima.id, telefono: prospecto.telefono })}
         className="group relative block w-full"
-        aria-label={`Ver el caso de ${prospecto.telefono} en grande`}
+        aria-label={`Abrir el caso de ${prospecto.telefono}`}
       >
         <span className="grid grid-cols-2 gap-px bg-[var(--crm-line)]">
           {(["antes", "despues"] as const).map((cual) => (
             <span key={cual} className="relative block aspect-[3/4] bg-[var(--crm-surface-3)]">
               {cual === "despues" && !ultima.despuesUrl ? (
                 <span className="grid h-full place-items-center px-2 text-center text-[11.5px] text-[var(--crm-ink-faint)]">
-                  No se completó
+                  Sin completar
                 </span>
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={`/admin/simulaciones/${ultima.id}/${cual}`}
-                  alt={cual === "antes" ? "Antes" : "Después"}
-                  className="h-full w-full object-cover"
+                  alt={cual === "antes" ? "Actual" : "Simulación"}
+                  className="h-full w-full object-contain"
                 />
               )}
             </span>
@@ -115,6 +117,14 @@ function Tarjeta({
           {fmtDate(ultima.creadoEn)}
           {prospecto.simulaciones.length > 1 && ` · ${prospecto.simulaciones.length} simulaciones`}
         </p>
+
+        <div className="mt-3">
+          <Calificar
+            valor={ultima.calificacion}
+            etiqueta="Calidad"
+            onCalificar={(n) => calificarSimulacion(ultima.id, n)}
+          />
+        </div>
 
         <div className="mt-3 flex gap-2">
           <button

@@ -24,12 +24,10 @@ export default async function LoginPage() {
           className="mx-auto mb-8 h-10 w-auto"
         />
 
-        <div className="rounded-[var(--crm-r-xl)] border border-[var(--crm-line)] bg-[var(--crm-surface)] px-6 py-7">
-          <h1 className="text-[19px] font-bold tracking-tight text-[var(--crm-ink)]">
-            Simulador de otomodelación
-          </h1>
+        <div className="rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-7 py-8">
+          <h1 className="crm-display text-[26px]!">Simulador</h1>
           <p className="mt-1 mb-6 text-[13.5px] text-[var(--crm-ink-mute)]">
-            Herramienta interna. Entra con la cuenta que te dieron.
+            Acceso para el equipo de la clínica.
           </p>
           <LoginForm />
         </div>

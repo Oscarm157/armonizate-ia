@@ -7,9 +7,11 @@ import { cargarImagen, detectar } from "@/lib/simulador/landmarks";
 import { cajaCabeza } from "@/lib/simulador/geometria";
 import { componer } from "@/lib/simulador/componer";
 import {
-  aDataUrl, antesYDespues, descargar, precargarLogo, reducir, soloDespues,
+  aDataUrl, actualYSimulacion, descargar, precargarLogo, reducir, soloSimulacion,
 } from "@/lib/simulador/entrega";
 import { Entregas, type Entrega } from "./Entregas";
+import { Calificar } from "./Calificar";
+import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 
 type Estado = "vacio" | "listo" | "generando" | "hecho" | "error";
 
@@ -18,7 +20,7 @@ const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 const GUIA = [
   "De frente, mirando a la cámara",
   "Con el pelo recogido, orejas descubiertas",
-  "Buena luz, sin sombras duras en la cara",
+  "Buena luz, sin sombras marcadas en el rostro",
   "Sin lentes ni gorra",
 ];
 
@@ -30,8 +32,15 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [resultado, setResultado] = useState<string | null>(null);
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [telefono, setTelefono] = useState("");
+  const [simulacionId, setSimulacionId] = useState<string | null>(null);
+  const [repeticiones, setRepeticiones] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const finalRef = useRef<{ despues: HTMLCanvasElement; antes: HTMLImageElement } | null>(null);
+  // La foto tal como la subió el vendedor, sin reducir ni recomprimir. Es sobre esta
+  // que se compone: usar la versión reducida (la que se sube por el límite de la
+  // petición) hacía que la entrega saliera a la resolución de entrada y no a la del
+  // modelo, que genera en 2K.
+  const fotoRef = useRef<HTMLImageElement | null>(null);
+  const finalRef = useRef<{ simulacion: HTMLCanvasElement; actual: HTMLImageElement } | null>(null);
 
   // El logo va impreso en las imágenes; se trae mientras el vendedor captura la foto.
   useEffect(() => {
@@ -45,7 +54,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const cargar = useCallback(async (file: File) => {
     setError(null);
     if (!TIPOS.includes(file.type)) {
-      setError("Usa una foto JPG, PNG o WebP.");
+      setError("El archivo debe ser JPG, PNG o WebP.");
       return;
     }
     const url = URL.createObjectURL(file);
@@ -53,16 +62,17 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       const img = await cargarImagen(url);
       const pts = await detectar(img);
       if (!pts) {
-        setError("No se ve una cara de frente. Pídele otra foto, de frente y con el pelo recogido.");
+        setError("No se detecta un rostro de frente. Solicite otra fotografía, de frente y con el cabello recogido.");
         setEstado("error");
         return;
       }
+      fotoRef.current = img;
       setOriginal(aDataUrl(reducir(img)));
       setResultado(null);
       setEntregas([]);
       setEstado("listo");
     } catch {
-      setError("No se pudo abrir esa foto.");
+      setError("No fue posible abrir la fotografía.");
       setEstado("error");
     } finally {
       URL.revokeObjectURL(url);
@@ -70,13 +80,13 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   }, []);
 
   const generar = useCallback(async () => {
-    if (!original) return;
+    const img = fotoRef.current;
+    if (!original || !img) return;
     setEstado("generando");
     setError(null);
     try {
-      const img = await cargarImagen(original);
       const pts = await detectar(img);
-      if (!pts) throw new Error("No se ve una cara de frente en la foto.");
+      if (!pts) throw new Error("No se detecta un rostro de frente en la fotografía.");
 
       // Recorte de la cabeza: el modelo necesita píxeles de oreja para trabajar.
       const caja = cajaCabeza(pts, img.naturalWidth, img.naturalHeight);
@@ -104,22 +114,23 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       const compuesta = await componer(img, generada);
       if (!compuesta) throw new Error("No se pudo ajustar el resultado sobre la foto original.");
 
-      finalRef.current = { despues: compuesta, antes: img };
+      finalRef.current = { simulacion: compuesta, actual: img };
       setResultado(compuesta.toDataURL("image/jpeg", 0.92));
       setEntregas([
         {
-          clave: "despues",
-          titulo: "Solo el después",
-          pie: "Para mandarle su resultado",
-          dataUrl: aDataUrl(soloDespues(compuesta), 0.85),
+          clave: "simulacion",
+          titulo: "Simulación",
+          pie: "La imagen del resultado estimado",
+          dataUrl: aDataUrl(soloSimulacion(compuesta), 0.85),
         },
         {
-          clave: "ambas",
-          titulo: "Antes y después",
-          pie: "Para que vea el contraste",
-          dataUrl: aDataUrl(antesYDespues(img, compuesta), 0.85),
+          clave: "comparativa",
+          titulo: "Comparativa",
+          pie: "Estado actual y simulación, lado a lado",
+          dataUrl: aDataUrl(actualYSimulacion(img, compuesta), 0.85),
         },
       ]);
+      setSimulacionId(data.id ?? null);
       setConsumo(data.usadas ?? consumo + 1);
       setEstado("hecho");
 
@@ -142,7 +153,10 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setEntregas([]);
     setError(null);
     setTelefono("");
+    setSimulacionId(null);
+    setRepeticiones(0);
     finalRef.current = null;
+    fotoRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -150,8 +164,8 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     const f = finalRef.current;
     if (!f) return;
     const base = soloDigitos || "paciente";
-    if (clave === "despues") descargar(soloDespues(f.despues), `${base}-despues.jpg`);
-    else descargar(antesYDespues(f.antes, f.despues), `${base}-antes-y-despues.jpg`);
+    if (clave === "simulacion") descargar(soloSimulacion(f.simulacion), `${base}-simulacion.jpg`);
+    else descargar(actualYSimulacion(f.actual, f.simulacion), `${base}-comparativa.jpg`);
   };
 
   const paso = !original ? 1 : !datosListos ? 2 : estado === "hecho" ? 3 : 2;
@@ -161,7 +175,9 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       <div>
         {/* Lienzo acotado en alto: si ocupa toda la pantalla, el campo del celular y
             el botón quedan bajo el pliegue y hay que ir a buscarlos. */}
-        <div className="relative mx-auto aspect-[4/5] max-h-[42dvh] w-full overflow-hidden rounded-[var(--crm-r-xl)] border border-[var(--crm-line)] bg-[var(--crm-surface-3)] lg:max-h-[540px]">
+        <div className={`relative mx-auto w-full overflow-hidden rounded-[var(--crm-r-lg)] ${
+            original ? "aspect-[4/5] max-h-[46dvh] lg:max-h-[560px]" : "aspect-[5/4] max-h-[38dvh] lg:max-h-[360px]"
+          } ${estado === "hecho" ? "crm-flotante" : "bg-[var(--crm-surface-2)]"}`}>
           {!original && (
             <label
               onDragOver={(e) => e.preventDefault()}
@@ -176,7 +192,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                 <ImageUp className="size-6" strokeWidth={1.75} />
               </span>
               <span className="text-[15px] font-semibold text-[var(--crm-ink)]">
-                Sube la foto del prospecto
+                Fotografía del paciente
               </span>
               <input
                 ref={inputRef}
@@ -197,21 +213,21 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
             <>
               <ReactCompareSlider
                 className="h-full w-full"
-                itemOne={<ReactCompareSliderImage src={original} alt="Antes" style={{ objectFit: "cover" }} />}
-                itemTwo={<ReactCompareSliderImage src={resultado} alt="Después" style={{ objectFit: "cover" }} />}
+                itemOne={<ReactCompareSliderImage src={original} alt="Actual" style={{ objectFit: "contain" }} />}
+                itemTwo={<ReactCompareSliderImage src={resultado} alt="Simulación" style={{ objectFit: "contain" }} />}
               />
               <span className="pointer-events-none absolute bottom-3 left-3 rounded-full bg-[var(--crm-ink)]/70 px-2.5 py-1 text-[11px] font-medium text-white">
-                Antes
+                Actual
               </span>
               <span className="pointer-events-none absolute right-3 bottom-3 rounded-full bg-[var(--crm-accent)] px-2.5 py-1 text-[11px] font-medium text-[var(--crm-on-accent)]">
-                Después
+                Simulación
               </span>
             </>
           )}
 
           {estado !== "hecho" && original && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={original} alt="Foto del prospecto" className="h-full w-full object-cover" />
+            <img src={original} alt="Fotografía" className="h-full w-full object-contain" />
           )}
 
           {estado === "generando" && (
@@ -219,15 +235,25 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
               <span className="rounded-full bg-[var(--crm-surface)] px-4 py-2 text-[13px] font-medium text-[var(--crm-ink)]">
                 Generando la simulación
               </span>
-              <span className="text-[12px] text-white/85">Toma unos 15 segundos</span>
+              <span className="text-[12px] text-white/85">Tarda alrededor de 15 segundos</span>
             </div>
           )}
         </div>
 
         {estado === "hecho" && (
-          <p className="mt-2 text-center text-[12.5px] text-[var(--crm-ink-mute)]">
-            Arrastra el control para comparar
-          </p>
+          <>
+            <p className="mt-2 text-center text-[12.5px] text-[var(--crm-ink-mute)]">
+              Deslice el control para comparar
+            </p>
+            {simulacionId && (
+              <div className="mt-5 flex justify-center">
+                <Calificar
+                  valor={null}
+                  onCalificar={(n) => calificarSimulacion(simulacionId, n)}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {entregas.length > 0 && <Entregas entregas={entregas} onDescargar={bajar} />}
@@ -235,31 +261,8 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
       {/* Control */}
       <div className="lg:sticky lg:top-20">
-        <div className="mb-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="crm-h2">Nueva simulación</h2>
-            <span
-              className={`crm-num text-[12.5px] ${agotado ? "text-[var(--crm-danger)]" : "text-[var(--crm-ink-mute)]"}`}
-            >
-              {consumo} / {tope}
-            </span>
-          </div>
-          <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-[var(--crm-surface-3)]">
-            <span
-              className="block h-full rounded-full"
-              style={{
-                width: `${Math.min(100, (consumo / tope) * 100)}%`,
-                background: agotado ? "var(--crm-danger)" : "var(--crm-accent)",
-              }}
-            />
-          </span>
-          <p className="mt-1.5 text-[11.5px] text-[var(--crm-ink-faint)]">
-            Simulaciones usadas este mes. Se reinicia el día 1.
-          </p>
-        </div>
-
         <ol className="space-y-3.5">
-          <Paso n={1} activo={paso === 1} hecho={!!original} texto="Foto del prospecto">
+          <Paso n={1} activo={paso === 1} hecho={!!original} texto="Fotografía">
             {!original && (
               <ul className="mt-2 space-y-1">
                 {GUIA.map((g) => (
@@ -272,7 +275,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
             )}
           </Paso>
 
-          <Paso n={2} activo={paso === 2} hecho={datosListos} texto="Celular del prospecto">
+          <Paso n={2} activo={paso === 2} hecho={datosListos} texto="Teléfono del paciente">
             <input
               id="telefono"
               className="crm-input mt-2"
@@ -284,7 +287,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
             />
           </Paso>
 
-          <Paso n={3} activo={paso === 3} hecho={estado === "hecho"} texto="Generar y mandar" />
+          <Paso n={3} activo={paso === 3} hecho={estado === "hecho"} texto="Generar y enviar" />
         </ol>
 
         {error && (
@@ -299,7 +302,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
         {agotado && !error && (
           <p className="mt-4 rounded-[var(--crm-r-md)] border border-[var(--crm-danger)]/35 bg-[var(--crm-danger)]/8 px-3 py-2.5 text-[13px] text-[var(--crm-ink)]">
-            Llegaste a tu tope de {tope} simulaciones este mes. Se reinicia el día 1.
+            Alcanzó el límite de {tope} simulaciones de este mes. Se restablece el día 1.
           </p>
         )}
 
@@ -320,22 +323,38 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
             </button>
           )}
 
-          {estado === "hecho" && (
-            <button
-              onClick={generar}
-              disabled={agotado}
-              className="crm-btn crm-btn-secondary w-full justify-center"
-            >
-              <RotateCcw className="size-4" /> Repetir la simulación
+          {original && (
+            <button onClick={reiniciar} className="crm-btn crm-btn-secondary w-full justify-center">
+              Cargar otra fotografía
             </button>
           )}
 
-          {original && (
-            <button onClick={reiniciar} className="crm-btn crm-btn-ghost w-full justify-center">
-              Empezar con otra foto
+          {/* Repetir queda discreto a propósito: entre corridas el resultado apenas
+              cambia, y tenerlo como botón invita a gastar cuota persiguiendo una
+              mejora que no llega. */}
+          {estado === "hecho" && repeticiones < 1 && !agotado && (
+            <button
+              onClick={() => {
+                setRepeticiones((n) => n + 1);
+                generar();
+              }}
+              className="mx-auto mt-1 flex items-center gap-1.5 text-[12.5px] text-[var(--crm-ink-faint)] underline underline-offset-4 hover:text-[var(--crm-ink-mute)]"
+            >
+              <RotateCcw className="size-3.5" /> Generar otra vez
             </button>
           )}
         </div>
+
+        <p className="mt-8 border-t border-[var(--crm-line)] pt-4 text-[12px] leading-relaxed text-[var(--crm-ink-mute)]">
+          Ambas imágenes se entregan con el aviso impreso de que son una simulación y de que el
+          resultado final puede variar.
+        </p>
+        {/* "Calibrado" y no "entrenado": el modelo que corre es nano-banana con el prompt
+            ajustado contra esos casos, no el LoRA. Es cierto y se sostiene si preguntan. */}
+        <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
+          Calibrado con más de 100 casos reales de Otomodelación Belab. Proyecto en mejora
+          continua.
+        </p>
       </div>
     </div>
   );
