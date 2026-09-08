@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, ImageUp, Link2, RotateCcw, Sparkles } from "lucide-react";
+import { AlertCircle, Check, Copy, ImageUp, Link2, RotateCcw, Sparkles } from "lucide-react";
 import { ReactCompareSlider, ReactCompareSliderImage } from "react-compare-slider";
 import { cargarImagen, detectar } from "@/lib/simulador/landmarks";
 import { cajaCabeza } from "@/lib/simulador/geometria";
@@ -42,6 +42,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [simulacionId, setSimulacionId] = useState<string | null>(null);
   const [enlace, setEnlace] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  const [folioCopiado, setFolioCopiado] = useState(false);
   const [repeticiones, setRepeticiones] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   // La foto tal como la subió el vendedor, sin reducir ni recomprimir. Es sobre esta
@@ -174,6 +175,13 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setTimeout(() => setCopiado(false), 2000);
   };
 
+  const copiarFolio = async () => {
+    if (!simulacionId) return;
+    await navigator.clipboard.writeText(simulacionId);
+    setFolioCopiado(true);
+    setTimeout(() => setFolioCopiado(false), 2000);
+  };
+
   const reiniciar = () => {
     setEstado("vacio");
     setOriginal(null);
@@ -185,6 +193,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setVambe("");
     setSimulacionId(null);
     setEnlace(null);
+    setFolioCopiado(false);
     setRepeticiones(0);
     finalRef.current = null;
     fotoRef.current = null;
@@ -310,6 +319,25 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                   </p>
                 </div>
               )}
+              {/* El folio es lo que se cita para volver a esta generación: sin él, dar
+                  con una simulación concreta obliga a buscarla a mano en el historial. */}
+              {simulacionId && (
+                <div>
+                  <p className="crm-eyebrow mb-2">Folio de la simulación</p>
+                  <div className="flex items-center gap-2">
+                    <p className="crm-num min-w-0 flex-1 truncate rounded-[var(--crm-r-sm)] bg-[var(--crm-surface-3)] px-3 py-2 text-[12px] text-[var(--crm-ink-mute)]">
+                      {simulacionId}
+                    </p>
+                    <button
+                      onClick={copiarFolio}
+                      className="crm-btn crm-btn-secondary crm-btn-sm shrink-0"
+                    >
+                      <Copy className="size-3.5" /> {folioCopiado ? "Copiado" : "Copiar"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {entregas.length > 0 && <Entregas entregas={entregas} onDescargar={bajar} />}
             </div>
           ) : (
