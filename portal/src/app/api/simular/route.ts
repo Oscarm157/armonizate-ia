@@ -26,6 +26,8 @@ const bodySchema = z.object({
   vambe: z.string().trim().url("El enlace de Vambe no es válido.").max(400),
   // Sin grado no se genera: es lo que decide cuánta corrección se aplica.
   grado: z.enum(["alto", "medio", "bajo"]),
+  // Con o sin el 10%. Lo decide el asesor: hay escalera de precios.
+  promocion: z.boolean(),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -99,6 +101,7 @@ export async function POST(request: Request) {
       prospectoVambe: datos.vambe,
       sede: me.sede,
       grado: datos.grado,
+      promocion: datos.promocion,
       modelo: MODELO,
       antesUrl: antes.url,
       antesPathname: antes.pathname,
