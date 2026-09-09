@@ -8,7 +8,6 @@ import { Calificar } from "@/components/simulador/Calificar";
 import type { ProspectoConSimulaciones } from "@/lib/datos";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 import { marcarResultado, reactivarEnlace } from "./acciones";
-import { codigoDescuento } from "@/lib/promo";
 
 const ETIQUETA = {
   pendiente: { texto: "Sin registrar", clase: "text-[var(--crm-ink-faint)]" },
@@ -137,10 +136,6 @@ function Tarjeta({
           <Copy className="size-3 shrink-0" />
           <span className="truncate">{folioCopiado ? "Folio copiado" : ultima.id}</span>
         </button>
-
-        <p className="crm-num mt-1 text-[11.5px] text-[var(--crm-ink-faint)]">
-          {ultima.promocion ? `Promoción: ${codigoDescuento(ultima.id)}` : "Sin promoción"}
-        </p>
 
         {prospecto.vambe && (
           <a

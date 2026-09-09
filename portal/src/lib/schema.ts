@@ -73,12 +73,6 @@ export const simulaciones = pgTable("simulaciones", {
   // para una separación mínima. Nulo en las filas anteriores a que existiera el grado.
   grado: text("grado").$type<Grado>(),
 
-  // Si el enlace del paciente lleva la promoción del 10%. Lo decide el asesor al
-  // generar: hay escalera de precios y un lead que ya viene con su descuento tope no
-  // debe llevar código encima. Las filas anteriores a la promoción quedan en false,
-  // que es lo que de verdad pasó con ellas.
-  promocion: boolean("promocion").default(false).notNull(),
-
   calificacion: integer("calificacion"),
   modelo: text("modelo"),
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow(),
