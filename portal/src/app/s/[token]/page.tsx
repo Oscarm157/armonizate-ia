@@ -61,9 +61,6 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
                   alt="Estado actual y simulación"
                   className="w-full rounded-[var(--crm-r-lg)]"
                 />
-                <figcaption className="mt-3 text-center text-[12.5px] text-[var(--crm-ink-faint)]">
-                  Mantenga presionada la imagen para guardarla
-                </figcaption>
               </figure>
             )}
 
