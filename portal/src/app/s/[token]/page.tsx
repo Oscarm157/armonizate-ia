@@ -3,6 +3,8 @@ import { porToken } from "@/lib/datos";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 import { Comparador } from "./Comparador";
+import { Plazo } from "@/components/paciente/Plazo";
+import { codigoDescuento, msRestantes } from "@/lib/promo";
 
 export const dynamic = "force-dynamic";
 // Es la fotografía de un paciente: fuera de los buscadores.
@@ -64,15 +66,25 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
               </figure>
             )}
 
-            <div className="mt-8 rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-6 py-6">
+            <div className="mt-8 rounded-[var(--crm-r-lg)] border border-[var(--crm-line)] bg-[var(--crm-surface)] px-6 py-6">
               <p className="text-[15px] font-medium text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
               <p className="mt-2 text-[14px] leading-relaxed text-[var(--crm-ink-soft)]">
                 {LEGAL_CUERPO}
               </p>
             </div>
 
+            {/* El plazo y la promoción van DESPUÉS del aviso: el paciente lee primero
+                que es una simulación y que el resultado puede variar. Encima, una cuenta
+                atrás y un precio grande se comen cualquier cosa que quede debajo. */}
+            {sim.expiraEn && (
+              <Plazo
+                restanteMs={msRestantes(sim.expiraEn)}
+                codigo={sim.promocion ? codigoDescuento(sim.id) : null}
+              />
+            )}
+
             <p className="mt-6 text-center text-[12.5px] text-[var(--crm-ink-faint)]">
-              Este enlace estará disponible por {HORAS_VIGENCIA} horas · clinicaarmonizate.mx
+              clinicaarmonizate.mx
             </p>
           </>
         )}

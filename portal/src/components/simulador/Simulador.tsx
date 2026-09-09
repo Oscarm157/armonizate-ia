@@ -10,6 +10,7 @@ import {
 } from "@/lib/simulador/entrega";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { GRADOS, type Grado } from "@/lib/simulador/grado";
+import { codigoDescuento } from "@/lib/promo";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 import { Comparar } from "./Comparar";
 import { Entregas, type Entrega } from "./Entregas";
@@ -37,6 +38,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [resultado, setResultado] = useState<string | null>(null);
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [grado, setGrado] = useState<Grado | null>(null);
+  const [promocion, setPromocion] = useState<boolean | null>(null);
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
   const [simulacionId, setSimulacionId] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const correoOk = CORREO.test(correo.trim());
   const vambeOk = /^https?:\/\/\S+$/.test(vambe.trim());
   const datosListos = correoOk && vambeOk;
-  const listoParaGenerar = !!grado && datosListos;
+  const listoParaGenerar = !!grado && datosListos && promocion !== null;
 
   const cargar = useCallback(async (file: File) => {
     setError(null);
@@ -81,6 +83,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       fotoRef.current = img;
       setOriginal(aDataUrl(reducir(img)));
       setGrado(null);
+      setPromocion(null);
       setResultado(null);
       setEntregas([]);
       setEstado("listo");
@@ -94,7 +97,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
   const generar = useCallback(async () => {
     const img = fotoRef.current;
-    if (!original || !img || !grado) return;
+    if (!original || !img || !grado || promocion === null) return;
     setEstado("generando");
     setError(null);
     try {
@@ -115,6 +118,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
           cabeza: c.toDataURL("image/jpeg", 0.95),
           original,
           grado,
+          promocion,
           correo: correo.trim(),
           vambe: vambe.trim(),
         }),
@@ -166,7 +170,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       setError(e instanceof Error ? e.message : "No se pudo generar la simulación.");
       setEstado("error");
     }
-  }, [original, grado, correo, vambe, consumo]);
+  }, [original, grado, promocion, correo, vambe, consumo]);
 
   const copiarEnlace = async () => {
     if (!enlace) return;
@@ -189,6 +193,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setEntregas([]);
     setError(null);
     setGrado(null);
+    setPromocion(null);
     setCorreo("");
     setVambe("");
     setSimulacionId(null);
@@ -209,6 +214,10 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   };
 
   const paso = !original ? 1 : !grado ? 2 : !datosListos ? 3 : 4;
+  const PROMO = [
+    { valor: true, titulo: "Con descuento", pie: "El paciente ve el 10% y su código" },
+    { valor: false, titulo: "Sin descuento", pie: "Solo ve el plazo del enlace" },
+  ];
 
   return (
     <>
@@ -313,7 +322,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                   con una simulación concreta obliga a buscarla a mano en el historial. */}
               {simulacionId && (
                 <div>
-                  <p className="crm-eyebrow mb-2">Folio de la simulación</p>
+                  <p className="crm-eyebrow mb-2">Folio y código de la promoción</p>
                   <div className="flex items-center gap-2">
                     <p className="crm-num min-w-0 flex-1 truncate rounded-[var(--crm-r-sm)] bg-[var(--crm-surface-3)] px-3 py-2 text-[12px] text-[var(--crm-ink-mute)]">
                       {simulacionId}
@@ -325,6 +334,11 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                       <Copy className="size-3.5" /> {folioCopiado ? "Copiado" : "Copiar"}
                     </button>
                   </div>
+                  {/* El código que verá el paciente en su enlace. El asesor lo necesita
+                      para dictarlo por teléfono y la clínica para cruzarlo. */}
+                  <p className="crm-num mt-2 text-[12.5px] text-[var(--crm-ink-mute)]">
+                    {promocion ? `Promoción: ${codigoDescuento(simulacionId)}` : "Sin promoción"}
+                  </p>
                 </div>
               )}
 
@@ -407,7 +421,33 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                 </div>
               </Paso>
 
-              <Paso n={4} activo={paso === 4} hecho={false} texto="Generar y enviar el enlace" />
+              {/* Va en el formulario porque es una decisión de precio: un prospecto que
+                  ya viene con su descuento tope no debe llevar código encima. */}
+              <Paso n={4} activo={paso === 4} hecho={promocion !== null} texto="Promoción">
+                <div className="mt-2.5 flex gap-1.5" role="radiogroup" aria-label="Promoción">
+                  {PROMO.map((o) => (
+                    <button
+                      key={String(o.valor)}
+                      type="button"
+                      role="radio"
+                      aria-checked={promocion === o.valor}
+                      title={o.pie}
+                      onClick={() => setPromocion(o.valor)}
+                      disabled={estado === "generando"}
+                      className={`crm-btn crm-btn-sm flex-1 justify-center ${
+                        promocion === o.valor ? "crm-btn-primary" : "crm-btn-secondary"
+                      }`}
+                    >
+                      {o.titulo}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
+                  {promocion === null
+                    ? "Elija si este paciente recibe el 10% de descuento."
+                    : PROMO.find((o) => o.valor === promocion)?.pie}
+                </p>
+              </Paso>
             </ol>
           )}
 
