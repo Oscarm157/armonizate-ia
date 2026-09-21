@@ -1,9 +1,10 @@
-import { and, count, desc, eq, gt, gte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, isNull, sql } from "drizzle-orm";
 import { db } from "./db";
-import { prospectos, simulaciones, users, type Resultado, type Simulacion, type User } from "./schema";
+import { ejecutivos, prospectos, simulaciones, type Ejecutivo, type Resultado, type Simulacion } from "./schema";
 import type { Sede } from "./sedes";
+import { SIN_EJECUTIVO } from "./ejecutivos";
 
-/** Cuántas generaciones puede pedir un asesor al mes. */
+/** Cuántas generaciones se pueden pedir al mes entre todos. */
 export const TOPE_MENSUAL = 50;
 
 /** Primer instante del mes en curso, que es donde arranca la cuota. */
@@ -11,66 +12,66 @@ export function inicioDelMes(hoy = new Date()): Date {
   return new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 }
 
-export async function getAllUsers(): Promise<User[]> {
-  return db.select().from(users).orderBy(desc(users.createdAt));
-}
-
 /**
- * Generaciones que lleva un vendedor este mes.
+ * Generaciones del mes, de todos.
  *
- * Se cuenta contra la base y no en memoria: el rate limit por instancia no sirve como
- * tope de gasto porque cada instancia serverless arranca su propio contador.
+ * El tope es global porque el acceso es con clave compartida: un tope por persona no
+ * protegería el gasto, cualquiera puede elegir cualquier nombre. Se cuenta contra la
+ * base y no en memoria porque cada instancia serverless arranca su propio contador.
  */
-export async function consumoDelMes(userId: string): Promise<number> {
+export async function consumoDelMes(): Promise<number> {
   const rows = await db
     .select({ n: count() })
     .from(simulaciones)
-    .where(and(eq(simulaciones.userId, userId), gte(simulaciones.creadoEn, inicioDelMes())));
+    .where(gte(simulaciones.creadoEn, inicioDelMes()));
   return rows[0]?.n ?? 0;
 }
 
-/** Consumo del mes de todo el equipo, para el panel de administración. */
-export async function consumoDelEquipo(): Promise<Map<string, number>> {
-  const rows = await db
-    .select({ userId: simulaciones.userId, n: count() })
-    .from(simulaciones)
-    .where(gte(simulaciones.creadoEn, inicioDelMes()))
-    .groupBy(simulaciones.userId);
-  return new Map(rows.map((r) => [r.userId, r.n]));
+/** La lista de ejecutivos. Con `soloActivos` es la que se ofrece al generar. */
+export async function listaEjecutivos({ soloActivos = false } = {}): Promise<Ejecutivo[]> {
+  return db
+    .select()
+    .from(ejecutivos)
+    .where(soloActivos ? eq(ejecutivos.activo, true) : undefined)
+    .orderBy(asc(ejecutivos.nombre));
 }
 
 export type ProspectoConSimulaciones = {
   correo: string;
   vambe: string | null;
-  asesor: string | null;
+  asesor: string;
   resultado: Resultado;
   sede: Sede | null;
   simulaciones: Simulacion[];
 };
 
 /**
- * El historial de un vendedor, agrupado por prospecto.
+ * El historial, agrupado por prospecto.
  *
  * Se agrupa porque el mismo prospecto suele pedir varias simulaciones y el resultado
  * de la venta es uno solo: marcarlo por simulación daría números inflados.
+ * `ejecutivo` filtra: un id, "ninguno" para lo que no tiene ejecutivo, o nada para todo.
  */
-export async function misProspectos(
-  userId: string,
-  { todoElEquipo = false, limite = 80 } = {}
-): Promise<ProspectoConSimulaciones[]> {
-  // Un administrador puede mirar el trabajo de todo el equipo: sin esto, revisar lo que
-  // generó otra persona obliga a consultar la base a mano.
-  const filas = todoElEquipo
-    ? await db.select().from(simulaciones).orderBy(desc(simulaciones.creadoEn)).limit(limite)
-    : await db
-        .select()
-        .from(simulaciones)
-        .where(eq(simulaciones.userId, userId))
-        .orderBy(desc(simulaciones.creadoEn))
-        .limit(limite);
+export async function historial({
+  ejecutivo,
+  limite = 80,
+}: { ejecutivo?: string; limite?: number } = {}): Promise<ProspectoConSimulaciones[]> {
+  const filtro =
+    ejecutivo === "ninguno"
+      ? isNull(simulaciones.ejecutivoId)
+      : ejecutivo
+        ? eq(simulaciones.ejecutivoId, ejecutivo)
+        : undefined;
+
+  const filas = await db
+    .select()
+    .from(simulaciones)
+    .where(filtro)
+    .orderBy(desc(simulaciones.creadoEn))
+    .limit(limite);
 
   const estados = new Map((await db.select().from(prospectos)).map((p) => [p.correo, p]));
-  const nombres = new Map((await db.select().from(users)).map((u) => [u.id, u.name]));
+  const nombres = new Map((await listaEjecutivos()).map((e) => [e.id, e.nombre]));
 
   const agrupado = new Map<string, ProspectoConSimulaciones>();
   for (const s of filas) {
@@ -83,7 +84,7 @@ export async function misProspectos(
     agrupado.set(s.prospectoCorreo, {
       correo: s.prospectoCorreo,
       vambe: p?.vambe ?? s.prospectoVambe ?? null,
-      asesor: todoElEquipo ? (nombres.get(s.userId) ?? null) : null,
+      asesor: (s.ejecutivoId && nombres.get(s.ejecutivoId)) || SIN_EJECUTIVO,
       resultado: p?.resultado ?? "pendiente",
       sede: p?.sede ?? s.sede ?? null,
       simulaciones: [s],

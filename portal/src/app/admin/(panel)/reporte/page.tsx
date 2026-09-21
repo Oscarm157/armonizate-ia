@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { canManageUsers } from "@/lib/permissions";
+import { isAdmin } from "@/lib/permissions";
 import { reportePorSede, inicioDelMes } from "@/lib/datos";
 import { nombreSede } from "@/lib/sedes";
 import { PageHeader } from "@/components/crm/PageShell";
@@ -16,7 +16,7 @@ export default async function ReportePage({
 }) {
   const me = await getCurrentUser();
   if (!me) redirect("/login");
-  if (!canManageUsers(me.role)) redirect("/admin");
+  if (!isAdmin(me.role)) redirect("/admin");
 
   const { mes } = await searchParams;
   const desde = mes ? new Date(`${mes}-01T00:00:00`) : inicioDelMes();

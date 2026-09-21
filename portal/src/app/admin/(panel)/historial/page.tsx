@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { requireUser } from "@/lib/session";
-import { canVerTodo } from "@/lib/permissions";
-import { misProspectos, consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
+import { historial, consumoDelMes, listaEjecutivos, TOPE_MENSUAL } from "@/lib/datos";
 import { PageHeader } from "@/components/crm/PageShell";
 import { KeyFacts } from "@/components/crm/KeyFacts";
 import { Empty } from "@/components/states";
 import { Historial } from "./Historial";
+import { FiltroEjecutivo } from "./FiltroEjecutivo";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Historial", robots: { index: false } };
@@ -13,17 +12,15 @@ export const metadata = { title: "Historial", robots: { index: false } };
 export default async function HistorialPage({
   searchParams,
 }: {
-  searchParams: Promise<{ equipo?: string }>;
+  searchParams: Promise<{ ejecutivo?: string }>;
 }) {
-  const me = await requireUser();
-  const { equipo } = await searchParams;
-  // Ver el trabajo del equipo requiere el rol, no solo el parámetro en la dirección.
-  const todoElEquipo = equipo === "1" && canVerTodo(me.role);
+  await requireUser();
+  const { ejecutivo = "" } = await searchParams;
 
-  const [prospectos, usadas] = await Promise.all([
-    misProspectos(me.id, { todoElEquipo }),
-    consumoDelMes(me.id),
-  ]);
+  const [lista, usadas] = await Promise.all([listaEjecutivos(), consumoDelMes()]);
+  // El filtro viene de la dirección: solo se aplica si es un ejecutivo que existe.
+  const filtro = ejecutivo === "ninguno" || lista.some((e) => e.id === ejecutivo) ? ejecutivo : "";
+  const prospectos = await historial({ ejecutivo: filtro || undefined });
 
   const ganados = prospectos.filter((p) => p.resultado === "ganado").length;
   const sinRegistrar = prospectos.filter((p) => p.resultado === "pendiente").length;
@@ -31,27 +28,9 @@ export default async function HistorialPage({
   return (
     <div className="crm-fade mx-auto max-w-[1200px]">
       <PageHeader
-        eyebrow="Herramienta"
         title="Historial"
         description="Registre cuáles prospectos cerraron para medir si la herramienta está apoyando la venta."
-        actions={
-          canVerTodo(me.role) ? (
-            <div className="flex gap-1.5">
-              {[
-                { texto: "Míos", activo: !todoElEquipo, href: "/admin/historial" },
-                { texto: "Todo el equipo", activo: todoElEquipo, href: "/admin/historial?equipo=1" },
-              ].map((o) => (
-                <Link
-                  key={o.href}
-                  href={o.href}
-                  className={`crm-btn crm-btn-sm ${o.activo ? "crm-btn-primary" : "crm-btn-secondary"}`}
-                >
-                  {o.texto}
-                </Link>
-              ))}
-            </div>
-          ) : null
-        }
+        actions={<FiltroEjecutivo ejecutivos={lista} actual={filtro} />}
       />
 
       <div className="mb-6">
@@ -67,8 +46,8 @@ export default async function HistorialPage({
 
       {prospectos.length === 0 ? (
         <Empty
-          title="Aún no hay simulaciones"
-          hint="Las simulaciones que genere aparecerán en este listado."
+          title="Sin simulaciones"
+          hint={filtro ? "Este ejecutivo aún no tiene simulaciones." : "Las simulaciones que se generen aparecerán en este listado."}
         />
       ) : (
         <Historial prospectos={prospectos} />

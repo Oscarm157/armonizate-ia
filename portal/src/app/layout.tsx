@@ -4,9 +4,13 @@ import "./globals.css";
 import { BotIdClient } from "botid/client";
 import { Toaster } from "@/components/ui/sonner";
 
-// El endpoint que llama al modelo cuesta dinero por generación. BotID necesita
-// registrarse también del lado del cliente para que la señal valga.
-const PROTEGIDO = [{ path: "/api/simular", method: "POST" }];
+// El endpoint que llama al modelo cuesta dinero por generación, y el login es una sola
+// clave compartida. BotID necesita registrarse también del lado del cliente para que la
+// señal valga.
+const PROTEGIDO = [
+  { path: "/api/simular", method: "POST" },
+  { path: "/login", method: "POST" },
+];
 
 // Montserrat es la tipografía del sitio de la clínica. El portal usa la misma para
 // que el vendedor lo lea como la misma casa.

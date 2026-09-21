@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
+import { canSimular } from "@/lib/permissions";
 import { put } from "@vercel/blob";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -31,7 +32,7 @@ function aFile(dataUrl: string, nombre: string): File {
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const me = await getCurrentUser();
-  if (!me) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  if (!me || !canSimular(me.role)) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
 
   const { id } = await params;
 
@@ -42,11 +43,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Imagen inválida." }, { status: 400 });
   }
 
-  // El id viene del cliente, así que la fila se carga de la base filtrando por dueño.
+  // El id viene del cliente: se carga de la base, y solo se acepta si aún no tiene
+  // resultado, para que nadie pueda sobrescribir una simulación ya entregada.
   const filas = await db
     .select({ id: simulaciones.id })
     .from(simulaciones)
-    .where(and(eq(simulaciones.id, id), eq(simulaciones.userId, me.id)));
+    .where(and(eq(simulaciones.id, id), isNull(simulaciones.despuesPathname)));
   if (!filas[0]) return NextResponse.json({ error: "No encontrada." }, { status: 404 });
 
   const subir = (dataUrl: string, nombre: string) =>

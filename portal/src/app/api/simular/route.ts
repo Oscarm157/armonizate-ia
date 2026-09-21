@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 import { checkBotId } from "botid/server";
 import { put } from "@vercel/blob";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { prospectos, simulaciones } from "@/lib/schema";
+import { ejecutivos, prospectos, simulaciones } from "@/lib/schema";
 import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 import { consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
@@ -26,6 +27,8 @@ const bodySchema = z.object({
   vambe: z.string().trim().url("El enlace de Vambe no es válido.").max(400),
   // Sin grado no se genera: es lo que decide cuánta corrección se aplica.
   grado: z.enum(["alto", "medio", "bajo"]),
+  // Quién generó: el acceso es compartido, así que se elige de la lista al generar.
+  ejecutivoId: z.string().uuid("Elija el ejecutivo."),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -54,13 +57,20 @@ export async function POST(request: Request) {
     datos = await parseJson(bodySchema, request);
   } catch {
     return NextResponse.json(
-      { error: "Revise la fotografía, el grado, el correo y el enlace de Vambe." },
+      { error: "Revise la fotografía, el grado, el ejecutivo, el correo y el enlace de Vambe." },
       { status: 400 }
     );
   }
 
+  // El id viene del cliente: se comprueba contra la base que exista y siga activo.
+  const [ejecutivo] = await db
+    .select()
+    .from(ejecutivos)
+    .where(and(eq(ejecutivos.id, datos.ejecutivoId), eq(ejecutivos.activo, true)));
+  if (!ejecutivo) return NextResponse.json({ error: "Elija un ejecutivo de la lista." }, { status: 400 });
+
   // El tope se verifica ANTES de llamar al modelo: pasado el límite no se gasta.
-  const usadas = await consumoDelMes(me.id);
+  const usadas = await consumoDelMes();
   if (usadas >= TOPE_MENSUAL) {
     return NextResponse.json(
       { error: `Alcanzó el límite de ${TOPE_MENSUAL} simulaciones de este mes.`, usadas, tope: TOPE_MENSUAL },
@@ -81,12 +91,12 @@ export async function POST(request: Request) {
   });
 
   // El prospecto se crea la primera vez que se le genera algo. La sede sale del
-  // vendedor, que es de donde después salen los números por plaza.
+  // ejecutivo, que es de donde después salen los números por plaza.
   const correo = datos.correo.toLowerCase();
 
   await db
     .insert(prospectos)
-    .values({ correo, vambe: datos.vambe, sede: me.sede, userId: me.id })
+    .values({ correo, vambe: datos.vambe, sede: ejecutivo.sede, userId: me.id })
     .onConflictDoUpdate({ target: prospectos.correo, set: { vambe: datos.vambe } });
 
   // La fila se crea antes de llamar al modelo: lo que consume cuota es haber pedido la
@@ -95,9 +105,10 @@ export async function POST(request: Request) {
     .insert(simulaciones)
     .values({
       userId: me.id,
+      ejecutivoId: ejecutivo.id,
       prospectoCorreo: correo,
       prospectoVambe: datos.vambe,
-      sede: me.sede,
+      sede: ejecutivo.sede,
       grado: datos.grado,
       modelo: MODELO,
       antesUrl: antes.url,

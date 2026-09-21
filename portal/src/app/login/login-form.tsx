@@ -15,29 +15,16 @@ export function LoginForm() {
   return (
     <form action={action} className="space-y-3.5">
       <div>
-        <label className="crm-eyebrow mb-1.5 block" htmlFor="email">
-          Correo
+        <label className="crm-eyebrow mb-1.5 block" htmlFor="clave">
+          Clave de acceso
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          placeholder="tu@correo.com"
-          className="crm-input"
-        />
-      </div>
-      <div>
-        <label className="crm-eyebrow mb-1.5 block" htmlFor="password">
-          Contraseña
-        </label>
-        <input
-          id="password"
-          name="password"
+          id="clave"
+          name="clave"
           type="password"
           autoComplete="current-password"
           required
+          autoFocus
           className="crm-input"
         />
       </div>

@@ -29,7 +29,15 @@ const GUIA = [
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
+export function Simulador({
+  usadas,
+  tope,
+  ejecutivos,
+}: {
+  usadas: number;
+  tope: number;
+  ejecutivos: { id: string; nombre: string }[];
+}) {
   const [estado, setEstado] = useState<Estado>("vacio");
   const [error, setError] = useState<string | null>(null);
   const [consumo, setConsumo] = useState(usadas);
@@ -37,6 +45,9 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [resultado, setResultado] = useState<string | null>(null);
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [grado, setGrado] = useState<Grado | null>(null);
+  // Se elige en cada simulación, a propósito sin recordar el anterior: el acceso es
+  // compartido y el mismo equipo lo usan varias personas.
+  const [ejecutivoId, setEjecutivoId] = useState("");
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
   const [simulacionId, setSimulacionId] = useState<string | null>(null);
@@ -60,7 +71,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const agotado = consumo >= tope;
   const correoOk = CORREO.test(correo.trim());
   const vambeOk = /^https?:\/\/\S+$/.test(vambe.trim());
-  const datosListos = correoOk && vambeOk;
+  const datosListos = !!ejecutivoId && correoOk && vambeOk;
   const listoParaGenerar = !!grado && datosListos;
 
   const cargar = useCallback(async (file: File) => {
@@ -115,6 +126,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
           cabeza: c.toDataURL("image/jpeg", 0.95),
           original,
           grado,
+          ejecutivoId,
           correo: correo.trim(),
           vambe: vambe.trim(),
         }),
@@ -166,7 +178,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       setError(e instanceof Error ? e.message : "No se pudo generar la simulación.");
       setEstado("error");
     }
-  }, [original, grado, correo, vambe, consumo]);
+  }, [original, grado, ejecutivoId, correo, vambe, consumo]);
 
   const copiarEnlace = async () => {
     if (!enlace) return;
@@ -189,6 +201,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setEntregas([]);
     setError(null);
     setGrado(null);
+    setEjecutivoId("");
     setCorreo("");
     setVambe("");
     setSimulacionId(null);
@@ -214,14 +227,14 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     <>
       {/* Una sola mesa de trabajo: la fotografía y el control comparten superficie.
           Dos cajas sueltas lado a lado se leían como formulario de plantilla. */}
-      <div className="crm-mesa grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_340px] lg:gap-12 lg:p-10">
+      <div className="crm-mesa grid gap-8 p-6 sm:p-8 md:grid-cols-[1fr_320px] md:gap-10 lg:gap-12 lg:p-10">
         {/* Fotografía */}
         <div className="relative">
           <div
             className={`relative w-full overflow-hidden rounded-[var(--crm-r-md)] ${
               original
-                ? "aspect-[4/5] max-h-[46dvh] bg-[var(--crm-surface-3)] lg:max-h-[560px]"
-                : "aspect-[5/4] max-h-[34dvh] bg-[var(--crm-accent)] lg:max-h-[420px]"
+                ? "aspect-[4/5] max-h-[46dvh] bg-[var(--crm-surface-3)] md:max-h-[min(560px,62dvh)]"
+                : "aspect-[5/4] max-h-[34dvh] bg-[var(--crm-accent)] md:max-h-[min(420px,52dvh)]"
             }`}
           >
             {!original && (
@@ -288,7 +301,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
 
         {/* Control. Terminada la simulación, aquí manda el enlace: es lo que se le manda
             al paciente y lo que sustituye al envío de la fotografía. */}
-        <div className="border-t border-[var(--crm-line)] pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-12">
+        <div className="border-t border-[var(--crm-line)] pt-8 md:border-t-0 md:border-l md:pt-0 md:pl-10 lg:pl-12">
           {estado === "hecho" ? (
             <div className="space-y-7">
               {enlace && (
@@ -378,8 +391,25 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                 </div>
               </Paso>
 
-              <Paso n={3} activo={paso === 3} hecho={datosListos} texto="Datos del paciente">
+              <Paso n={3} activo={paso === 3} hecho={datosListos} texto="Ejecutivo y paciente">
                 <div className="mt-2.5 space-y-2.5">
+                  <select
+                    id="ejecutivo"
+                    aria-label="Ejecutivo"
+                    className="crm-input"
+                    value={ejecutivoId}
+                    onChange={(e) => setEjecutivoId(e.target.value)}
+                    disabled={estado === "generando"}
+                  >
+                    <option value="" disabled>
+                      Ejecutivo que genera
+                    </option>
+                    {ejecutivos.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.nombre}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     id="correo"
                     className="crm-input"

@@ -1,7 +1,7 @@
 import type { UserRole } from "./schema";
 
-// Roles: admin (administra el equipo y ve todo), agent (el vendedor: genera
-// simulaciones y ve las suyas), viewer (solo lectura).
+// Roles: admin (clave de administración: ve todo y administra ejecutivos), agent
+// (clave de ejecutivo: simulador e historial), viewer (solo lectura, sin clave hoy).
 // Cualquier rol desconocido (datos viejos) se trata como "agent".
 export function normalizeRole(role: string): UserRole {
   return role === "admin" || role === "viewer" ? role : "agent";
@@ -19,8 +19,4 @@ export function canSimular(role: UserRole): boolean {
 /** Quién ve las simulaciones de todo el equipo, no solo las suyas. */
 export function canVerTodo(role: UserRole): boolean {
   return role === "admin" || role === "viewer";
-}
-
-export function canManageUsers(role: UserRole): boolean {
-  return role === "admin";
 }

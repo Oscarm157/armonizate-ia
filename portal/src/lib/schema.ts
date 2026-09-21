@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
 import type { Sede } from "./sedes";
 import type { Grado } from "./simulador/grado";
 
@@ -18,6 +18,32 @@ export const users = pgTable("users", {
 });
 
 export type User = typeof users.$inferSelect;
+
+// ===== Ejecutivos =====
+// El acceso es con una clave compartida, así que la sesión no dice quién generó cada
+// simulación: el ejecutivo se elige de esta lista al generar. La sede sale de aquí y
+// alimenta el reporte por plaza.
+export const ejecutivos = pgTable("ejecutivos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nombre: text("nombre").notNull(),
+  sede: text("sede").$type<Sede>(),
+  activo: boolean("activo").default(true).notNull(),
+  creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow(),
+});
+
+export type Ejecutivo = typeof ejecutivos.$inferSelect;
+
+// Intentos fallidos de clave por IP. Con una clave compartida, el tope de intentos es
+// lo que impide probar claves a fuerza bruta.
+export const intentosAcceso = pgTable(
+  "intentos_acceso",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ip: text("ip").notNull(),
+    creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("intentos_acceso_ip_idx").on(t.ip, t.creadoEn)]
+);
 
 // ===== Prospectos =====
 // El resultado de la venta vive aquí y no en cada simulación: un mismo prospecto puede
@@ -47,6 +73,8 @@ export const simulaciones = pgTable("simulaciones", {
   userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
+  // Nulo en lo generado antes de las claves compartidas: eso quedó a nombre de Administración.
+  ejecutivoId: uuid("ejecutivo_id").references(() => ejecutivos.id, { onDelete: "set null" }),
   prospectoCorreo: text("prospecto_correo").notNull(),
   prospectoVambe: text("prospecto_vambe"),
   sede: text("sede").$type<Sede>(),

@@ -1,6 +1,5 @@
 import { requireUser } from "@/lib/session";
-import { consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
-import { nombreSede } from "@/lib/sedes";
+import { consumoDelMes, listaEjecutivos, TOPE_MENSUAL } from "@/lib/datos";
 import { PageHeader } from "@/components/crm/PageShell";
 import { Simulador } from "@/components/simulador/Simulador";
 
@@ -8,33 +7,37 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Simulador", robots: { index: false } };
 
 export default async function SimuladorPage() {
-  const me = await requireUser();
-  const usadas = await consumoDelMes(me.id);
+  await requireUser();
+  const [usadas, ejecutivos] = await Promise.all([
+    consumoDelMes(),
+    listaEjecutivos({ soloActivos: true }),
+  ]);
   const poco = usadas >= TOPE_MENSUAL * 0.9;
 
   return (
     <div className="crm-fade mx-auto max-w-[1180px]">
       <PageHeader
-        eyebrow={nombreSede(me.sede)}
         title="Simulador de otomodelación"
-        description="Cargue la fotografía del paciente y obtenga la simulación del procedimiento."
         actions={
-          // La cuota vive aquí y no junto al formulario: ahí se leía como el avance de
-          // la simulación en curso. Es información de la cuenta, no del trabajo.
+          // La cuota es de todo el equipo: el acceso es compartido y el tope también.
           <span className="text-right">
             <span
-              className={`crm-num block text-[26px] font-light leading-none ${
+              className={`crm-num block text-[22px] font-light leading-none ${
                 poco ? "text-[var(--crm-danger)]" : "text-[var(--crm-ink)]"
               }`}
             >
               {usadas}
               <span className="text-[var(--crm-ink-faint)]"> / {TOPE_MENSUAL}</span>
             </span>
-            <span className="crm-eyebrow mt-2 block">Simulaciones este mes</span>
+            <span className="crm-eyebrow mt-1.5 block">Simulaciones del mes</span>
           </span>
         }
       />
-      <Simulador usadas={usadas} tope={TOPE_MENSUAL} />
+      <Simulador
+        usadas={usadas}
+        tope={TOPE_MENSUAL}
+        ejecutivos={ejecutivos.map((e) => ({ id: e.id, nombre: e.nombre }))}
+      />
     </div>
   );
 }
