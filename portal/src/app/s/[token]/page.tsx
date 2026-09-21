@@ -23,14 +23,16 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
 
   return (
     <main className="crm-root flex min-h-[100dvh] flex-col items-center bg-[var(--crm-bg)] px-5 py-10 sm:px-8">
-      <div className="w-full max-w-[760px]">
+      {/* Columna angosta en todas las pantallas: en celular se ve bien y en escritorio,
+          a lo ancho, la foto quedaba enorme y los botones fuera de la pantalla. */}
+      <div className="w-full max-w-[440px]">
         <Image
           src="/logo-armonizate.png"
           alt="Clínica Armonízate"
           width={1410}
           height={377}
           priority
-          className="mx-auto mb-9 h-9 w-auto"
+          className="mx-auto mb-7 h-9 w-auto"
         />
 
         {!sim ? (

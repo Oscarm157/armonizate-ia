@@ -30,7 +30,7 @@ export default async function HistorialPage({
         <div>
           <h1 className="text-[24px] font-medium text-[var(--crm-ink)]">Historial</h1>
           <p className="mt-1 text-[15px] text-[var(--crm-ink-mute)]">
-            Marque en cada paciente si se hizo la venta.
+            Marque en cada paciente el estado del ticket.
           </p>
         </div>
         <FiltroEjecutivo ejecutivos={lista} actual={filtro} />
@@ -41,7 +41,7 @@ export default async function HistorialPage({
           items={[
             { label: "Este mes", value: <span className="crm-num">{usadas} / {TOPE_MENSUAL}</span> },
             { label: "Prospectos", value: <span className="crm-num">{prospectos.length}</span> },
-            { label: "Ganados", value: <span className="crm-num">{ganados}</span> },
+            { label: "Tickets ganados", value: <span className="crm-num">{ganados}</span> },
             { label: "Sin registrar", value: <span className="crm-num">{sinRegistrar}</span> },
           ]}
         />

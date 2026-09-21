@@ -8,7 +8,7 @@
 
 import { cargarImagen } from "./landmarks";
 
-import { LEGAL_IMAGEN_1, LEGAL_IMAGEN_2 } from "../legal";
+import { LEGAL_IMAGEN } from "../legal";
 
 const SITIO = "clinicaarmonizate.mx";
 
@@ -96,22 +96,43 @@ function pintarPie(ctx: CanvasRenderingContext2D, ancho: number, y: number, alto
 
   // Logo centrado y con presencia: la imagen se reenvía por WhatsApp y funciona como
   // pieza de la clínica, no solo como entrega técnica.
-  const blanco = logoEnBlanco(alto * 0.34);
-  if (blanco) ctx.drawImage(blanco, centro - blanco.width / 2, y + alto * 0.22);
+  const blanco = logoEnBlanco(alto * 0.3);
+  if (blanco) ctx.drawImage(blanco, centro - blanco.width / 2, y + alto * 0.1);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = `500 ${Math.round(alto * 0.13)}px ${familia()}`;
-  ctx.fillText(SITIO, centro, y + alto * 0.72, ancho * 0.9);
+  ctx.font = `500 ${Math.round(alto * 0.11)}px ${familia()}`;
+  ctx.fillText(SITIO, centro, y + alto * 0.52, ancho * 0.9);
 
-  ctx.fillStyle = "rgba(255,255,255,0.62)";
-  ctx.font = `400 ${Math.round(alto * 0.082)}px ${familia()}`;
-  ctx.fillText(LEGAL_IMAGEN_2, centro, y + alto * 0.9, ancho * 0.94);
+  // El aviso completo, en las líneas que hagan falta: la imagen se reenvía sola y
+  // tiene que llevar el texto entero, no una versión recortada.
+  // En la imagen suelta, más angosta, salen más líneas: la letra se achica hasta que
+  // el bloque quepa en lo que queda del pie.
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  let tam = alto * 0.068;
+  let lineas: string[];
+  for (;;) {
+    ctx.font = `400 ${Math.round(tam)}px ${familia()}`;
+    lineas = partir(ctx, LEGAL_IMAGEN, ancho * 0.9);
+    if (lineas.length * tam * 1.35 <= alto * 0.34 || tam < alto * 0.03) break;
+    tam *= 0.92;
+  }
+  const inicio = y + alto * 0.66 + tam / 2;
+  lineas.forEach((l, i) => ctx.fillText(l, centro, inicio + i * tam * 1.35));
+}
 
-  // El aviso de que no es una promesa va arriba del todo y en mayúsculas: es lo que
-  // evita que alguien vuelva con la imagen diciendo que se le prometió un resultado.
-  ctx.fillStyle = "rgba(255,255,255,0.9)";
-  ctx.font = `600 ${Math.round(alto * 0.1)}px ${familia()}`;
-  ctx.fillText(LEGAL_IMAGEN_1, centro, y + alto * 0.09, ancho * 0.94);
+/** Parte un texto en líneas que quepan en `max` píxeles con la fuente actual. */
+function partir(ctx: CanvasRenderingContext2D, texto: string, max: number): string[] {
+  const lineas: string[] = [];
+  let actual = "";
+  for (const palabra of texto.split(" ")) {
+    const prueba = actual ? `${actual} ${palabra}` : palabra;
+    if (ctx.measureText(prueba).width > max && actual) {
+      lineas.push(actual);
+      actual = palabra;
+    } else actual = prueba;
+  }
+  if (actual) lineas.push(actual);
+  return lineas;
 }
 
 function pintarEtiqueta(ctx: CanvasRenderingContext2D, texto: string, x: number, y: number, ancho: number) {
