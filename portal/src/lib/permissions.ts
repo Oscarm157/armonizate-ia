@@ -15,8 +15,3 @@ export const isReadOnly = (r: UserRole) => r === "viewer";
 export function canSimular(role: UserRole): boolean {
   return canWrite(role);
 }
-
-/** Quién ve las simulaciones de todo el equipo, no solo las suyas. */
-export function canVerTodo(role: UserRole): boolean {
-  return role === "admin" || role === "viewer";
-}

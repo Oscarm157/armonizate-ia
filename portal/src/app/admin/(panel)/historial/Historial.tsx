@@ -153,7 +153,7 @@ function Tarjeta({
                 disabled={pendiente}
                 className="crm-btn crm-btn-secondary crm-btn-lg w-full"
               >
-                <RotateCw className="size-5" /> Reactivar el enlace 24 horas
+                <RotateCw className="size-5" /> Reactivar el enlace por 24 horas
               </button>
             </div>
           ))}

@@ -122,3 +122,25 @@ export function Comparar({
     </div>
   );
 }
+
+/** Los dos botones grandes para cambiar de foto: 100 = foto actual, 0 = simulación. */
+export function BotonesVista({ vista, onVista }: { vista: number; onVista: (n: number) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-2" role="group" aria-label="Qué foto ver">
+      {[
+        { texto: "Ver foto actual", valor: 100 },
+        { texto: "Ver simulación", valor: 0 },
+      ].map((b) => (
+        <button
+          key={b.valor}
+          type="button"
+          aria-pressed={vista === b.valor}
+          onClick={() => onVista(b.valor)}
+          className={`crm-btn crm-btn-lg ${vista === b.valor ? "crm-btn-primary" : "crm-btn-secondary"}`}
+        >
+          {b.texto}
+        </button>
+      ))}
+    </div>
+  );
+}

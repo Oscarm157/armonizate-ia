@@ -11,7 +11,7 @@ import {
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { GRADOS, type Grado } from "@/lib/simulador/grado";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
-import { Comparar } from "./Comparar";
+import { BotonesVista, Comparar } from "./Comparar";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
@@ -53,6 +53,9 @@ export function Simulador({
   const [simulacionId, setSimulacionId] = useState<string | null>(null);
   const [enlace, setEnlace] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  // Copiar el aviso "Enlace copiado" dura 2 s; esto recuerda que ya se copió para
+  // marcar el paso como LISTO y pasar el resaltado al siguiente.
+  const [yaCopio, setYaCopio] = useState(false);
   const [folioCopiado, setFolioCopiado] = useState(false);
   const [repeticiones, setRepeticiones] = useState(0);
   // Paso que el ejecutivo reabrió con "Cambiar"; null = el primero sin terminar.
@@ -188,6 +191,7 @@ export function Simulador({
     if (!enlace) return;
     await navigator.clipboard.writeText(enlace);
     setCopiado(true);
+    setYaCopio(true);
     setTimeout(() => setCopiado(false), 2000);
   };
 
@@ -214,6 +218,7 @@ export function Simulador({
     setRepeticiones(0);
     setEditando(null);
     setVista(0);
+    setYaCopio(false);
     finalRef.current = null;
     fotoRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
@@ -328,21 +333,8 @@ export function Simulador({
           </div>
 
           {estado === "hecho" && (
-            <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label="Qué foto ver">
-              {[
-                { texto: "Ver foto actual", valor: 100 },
-                { texto: "Ver simulación", valor: 0 },
-              ].map((b) => (
-                <button
-                  key={b.valor}
-                  type="button"
-                  aria-pressed={vista === b.valor}
-                  onClick={() => setVista(b.valor)}
-                  className={`crm-btn crm-btn-lg ${vista === b.valor ? "crm-btn-primary" : "crm-btn-secondary"}`}
-                >
-                  {b.texto}
-                </button>
-              ))}
+            <div className="mt-3">
+              <BotonesVista vista={vista} onVista={setVista} />
             </div>
           )}
         </div>
@@ -367,15 +359,15 @@ export function Simulador({
 
           {estado === "hecho" ? (
             <>
-              <Paso n={1} total={3} estado="actual" titulo="Copie el enlace y mándelo al paciente por WhatsApp">
+              <Paso n={1} total={3} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copie el enlace y mándelo al paciente por WhatsApp">
                 {enlace && (
                   <>
                     <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-xl w-full">
                       {copiado ? <Check className="size-5" /> : <Link2 className="size-5" />}
-                      {copiado ? "Enlace copiado" : "Copiar enlace"}
+                      {copiado ? "Enlace copiado" : "Copiar enlace para el paciente"}
                     </button>
                     <p className="mt-3 text-[16px] text-[var(--crm-ink)]">
-                      {copiado
+                      {yaCopio
                         ? "Listo. Ahora péguelo en la conversación de WhatsApp del paciente."
                         : `El paciente lo abre en su teléfono. Dura ${HORAS_VIGENCIA} horas.`}
                     </p>
@@ -389,7 +381,7 @@ export function Simulador({
                 )}
               </Paso>
 
-              <Paso n={3} total={3} estado="abierto" titulo="¿Tiene otro paciente?">
+              <Paso n={3} total={3} estado={yaCopio ? "actual" : "abierto"} titulo="Para otro paciente, empiece de nuevo">
                 <button onClick={reiniciar} className="crm-btn crm-btn-secondary crm-btn-lg w-full">
                   Hacer otra simulación
                 </button>
@@ -403,7 +395,7 @@ export function Simulador({
                   }}
                   className="mx-auto flex min-h-11 items-center gap-2 text-[15px] text-[var(--crm-ink-mute)] underline underline-offset-4"
                 >
-                  <RotateCcw className="size-4" /> No me convence, generar otra vez
+                  <RotateCcw className="size-4" /> No quedó bien. Vuelva a generar
                 </button>
               )}
 
@@ -493,7 +485,7 @@ export function Simulador({
                   escribir el enlace. Queda abierto hasta generar. */}
               <Paso
                 n={3}
-                estado={actual === 3 ? "actual" : actual === 4 && datosListos ? "listo-abierto" : "falta"}
+                estado={actual === 3 ? "actual" : datosListos ? "listo-abierto" : "falta"}
                 titulo="Escriba los datos del ejecutivo y del paciente"
               >
                 <div className="space-y-4">
