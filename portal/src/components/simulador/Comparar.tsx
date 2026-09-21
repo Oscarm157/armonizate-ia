@@ -91,7 +91,8 @@ export function Comparar({
         className="pointer-events-none absolute inset-y-0 w-px bg-white/85"
         style={{
           left: `${posicion}%`,
-          opacity: pulsando ? 0 : 1,
+          // En los extremos el tirador queda pegado al borde y estorba: se esconde.
+          opacity: pulsando || posicion <= 0 || posicion >= 100 ? 0 : 1,
           transition: pulsando ? "none" : "left 180ms ease-out, opacity 180ms ease-out",
         }}
       >

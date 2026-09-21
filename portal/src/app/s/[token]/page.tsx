@@ -35,18 +35,17 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
 
         {!sim ? (
           <div className="rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-7 py-12 text-center">
-            <h1 className="crm-display text-[26px]!">El enlace ya no está disponible</h1>
-            <p className="mx-auto mt-3 max-w-[46ch] text-[14.5px] leading-relaxed text-[var(--crm-ink-mute)]">
-              Las simulaciones se comparten por {HORAS_VIGENCIA} horas. Escriba a su asesor para que le
-              genere el enlace de nuevo.
+            <h1 className="text-[28px] font-medium text-[var(--crm-ink)]">Este enlace ya venció</h1>
+            <p className="mx-auto mt-3 max-w-[40ch] text-[18px] leading-relaxed text-[var(--crm-ink-soft)]">
+              Los enlaces duran {HORAS_VIGENCIA} horas. Escriba a su asesor por WhatsApp y pídale que se
+              lo mande de nuevo.
             </p>
           </div>
         ) : (
           <>
-            <h1 className="crm-display text-center text-[30px]!">Su simulación</h1>
-            <p className="mx-auto mt-3 mb-8 max-w-[48ch] text-center text-[14.5px] leading-relaxed text-[var(--crm-ink-mute)]">
-              Mantenga pulsada la imagen para ver la simulación. Al soltar vuelve su
-              fotografía actual.
+            <h1 className="text-center text-[30px] font-medium text-[var(--crm-ink)]">Su simulación</h1>
+            <p className="mx-auto mt-2 mb-6 max-w-[40ch] text-center text-[18px] leading-relaxed text-[var(--crm-ink-soft)]">
+              Use los botones de abajo para cambiar entre su foto actual y la simulación.
             </p>
 
             <Comparador token={token} />
@@ -54,7 +53,10 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
             {/* La misma pieza que se puede guardar o reenviar: el comparador solo vive
                 mientras la página esté abierta. */}
             {sim.comparativaPathname && (
-              <figure className="mt-8">
+              <figure className="mt-10">
+                <figcaption className="mb-3 text-center text-[18px] font-medium text-[var(--crm-ink)]">
+                  Antes y después, lado a lado
+                </figcaption>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/s/${token}/comparativa`}
@@ -65,13 +67,13 @@ export default async function EnlacePublico({ params }: { params: Promise<{ toke
             )}
 
             <div className="mt-8 rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-6 py-6">
-              <p className="text-[15px] font-medium text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
-              <p className="mt-2 text-[14px] leading-relaxed text-[var(--crm-ink-soft)]">
+              <p className="text-[17px] font-medium text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
+              <p className="mt-2 text-[16px] leading-relaxed text-[var(--crm-ink-soft)]">
                 {LEGAL_CUERPO}
               </p>
             </div>
 
-            <p className="mt-6 text-center text-[12.5px] text-[var(--crm-ink-faint)]">
+            <p className="mt-6 text-center text-[15px] text-[var(--crm-ink-mute)]">
               Este enlace estará disponible por {HORAS_VIGENCIA} horas · clinicaarmonizate.mx
             </p>
           </>

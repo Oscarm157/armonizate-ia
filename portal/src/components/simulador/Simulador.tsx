@@ -494,10 +494,10 @@ export function Simulador({
               <Paso
                 n={3}
                 estado={actual === 3 ? "actual" : actual === 4 && datosListos ? "listo-abierto" : "falta"}
-                titulo="Escriba sus datos y los del paciente"
+                titulo="Escriba los datos del ejecutivo y del paciente"
               >
                 <div className="space-y-4">
-                  <Campo id="ejecutivo" etiqueta="Su nombre">
+                  <Campo id="ejecutivo" etiqueta="Nombre del ejecutivo">
                     <select
                       id="ejecutivo"
                       className="crm-input text-[16px]!"
@@ -506,7 +506,7 @@ export function Simulador({
                       disabled={ocupado}
                     >
                       <option value="" disabled>
-                        Elija su nombre
+                        Elija el nombre del ejecutivo
                       </option>
                       {ejecutivos.map((e) => (
                         <option key={e.id} value={e.id}>

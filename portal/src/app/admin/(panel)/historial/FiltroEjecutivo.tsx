@@ -12,17 +12,17 @@ export function FiltroEjecutivo({
 }) {
   const router = useRouter();
   return (
-    <label className="flex items-center gap-2 text-[13px] text-[var(--crm-ink-mute)]">
-      Ejecutivo
+    <label className="flex flex-wrap items-center gap-2 text-[16px] font-medium text-[var(--crm-ink)]">
+      Ver simulaciones de:
       <select
         id="filtro-ejecutivo"
-        className="crm-input w-auto! py-1.5!"
+        className="crm-input w-auto! min-w-[220px] text-[16px]!"
         value={actual}
         onChange={(e) =>
           router.push(e.target.value ? `/admin/historial?ejecutivo=${e.target.value}` : "/admin/historial")
         }
       >
-        <option value="">Todos</option>
+        <option value="">Todos los ejecutivos</option>
         {ejecutivos.map((e) => (
           <option key={e.id} value={e.id}>
             {e.nombre}

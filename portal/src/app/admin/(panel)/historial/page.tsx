@@ -1,6 +1,5 @@
 import { requireUser } from "@/lib/session";
 import { historial, consumoDelMes, listaEjecutivos, TOPE_MENSUAL } from "@/lib/datos";
-import { PageHeader } from "@/components/crm/PageShell";
 import { KeyFacts } from "@/components/crm/KeyFacts";
 import { Empty } from "@/components/states";
 import { Historial } from "./Historial";
@@ -27,11 +26,15 @@ export default async function HistorialPage({
 
   return (
     <div className="crm-fade mx-auto max-w-[1200px]">
-      <PageHeader
-        title="Historial"
-        description="Registre cuáles prospectos cerraron para medir si la herramienta está apoyando la venta."
-        actions={<FiltroEjecutivo ejecutivos={lista} actual={filtro} />}
-      />
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[24px] font-medium text-[var(--crm-ink)]">Historial</h1>
+          <p className="mt-1 text-[15px] text-[var(--crm-ink-mute)]">
+            Marque en cada paciente si se hizo la venta.
+          </p>
+        </div>
+        <FiltroEjecutivo ejecutivos={lista} actual={filtro} />
+      </div>
 
       <div className="mb-6">
         <KeyFacts
