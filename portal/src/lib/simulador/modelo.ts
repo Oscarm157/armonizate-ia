@@ -47,7 +47,11 @@ export const PROMPTS: Record<Grado, string> = {
 
   medio: `Acerca las orejas de esta persona a la cabeza con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe reducirse de forma notable: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos un tercio. El contorno de la cabeza queda casi como una curva continua de la sien a la mandíbula, con el borde de la oreja asomando apenas. Si la oreja sigue tan abierta como en el original, está mal: métela más. ${EJE} ${COLA}`,
 
-  bajo: `Pega las orejas de esta persona completamente al cráneo con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho lo marca el cráneo, nunca las orejas. El contorno de la cabeza tiene que ser una curva continua y limpia de la sien a la mandíbula, sin ningún saliente. La oreja queda plana contra la cabeza, sin hueco ni sombra entre el borde de la oreja y el cráneo. Si al terminar todavía se distingue el borde de una oreja por fuera de esa curva, está mal: métela más, hasta que no sobresalga nada. ${EJE} ${COLA}`,
+  // Casos leves: la meta es que la oreja deje de verse de frente, no solo que quede
+  // plana. Probado el 2026-09-21 contra los casos leves apartados (043, 054, 092): el
+  // texto anterior ("pega las orejas... la oreja queda plana") las dejaba asomando casi
+  // igual que en la original; este las esconde detrás del contorno.
+  bajo: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: en esta vista frontal no se ve ninguna oreja; quedan escondidas detrás del contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho lo marca el cráneo, nunca las orejas. El contorno de la cabeza es una curva continua y limpia de la sien a la mandíbula. Si al terminar se ve cualquier parte de una oreja por fuera de esa curva, está mal: escóndela más, hasta que no se vea nada. ${EJE} ${COLA}`,
 };
 
 type Prediccion = {

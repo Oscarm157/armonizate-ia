@@ -11,8 +11,9 @@
  */
 export type Grado = "alto" | "medio" | "bajo";
 
+// En el orden en que se leen, de menos a más. Los nombres son los que usa la clínica.
 export const GRADOS: { valor: Grado; titulo: string; pie: string }[] = [
-  { valor: "alto", titulo: "Grado alto", pie: "Se ven completas de frente" },
-  { valor: "medio", titulo: "Grado medio", pie: "Se nota la separación, es el caso más común" },
-  { valor: "bajo", titulo: "Grado bajo", pie: "Apenas se separan de la cabeza" },
+  { valor: "bajo", titulo: "Leve", pie: "Apenas se separan de la cabeza" },
+  { valor: "medio", titulo: "Medio", pie: "Se nota la separación, es el caso más común" },
+  { valor: "alto", titulo: "Grave", pie: "Se ven completas de frente" },
 ];

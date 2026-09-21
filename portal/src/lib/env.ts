@@ -10,6 +10,9 @@ const schema = z.object({
   EMAIL_FROM: z.string().email().optional().or(z.literal("")),
   // Simulador: llave de Replicate. Sin ella el portal levanta pero no genera.
   REPLICATE_API_TOKEN: z.string().optional(),
+  // Claves compartidas de acceso: una para ejecutivos y otra para administración.
+  ACCESO_EJECUTIVO: z.string().min(8, "ACCESO_EJECUTIVO debe tener al menos 8 caracteres."),
+  ACCESO_ADMIN: z.string().min(8, "ACCESO_ADMIN debe tener al menos 8 caracteres."),
 });
 
 let cached: z.infer<typeof schema> | undefined;

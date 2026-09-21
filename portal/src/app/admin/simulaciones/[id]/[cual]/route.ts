@@ -1,9 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { get } from "@vercel/blob";
 import { db } from "@/lib/db";
 import { simulaciones } from "@/lib/schema";
 import { getCurrentUser } from "@/lib/session";
-import { canVerTodo } from "@/lib/permissions";
 
 export const runtime = "nodejs";
 
@@ -11,7 +10,8 @@ export const runtime = "nodejs";
  * Sirve la foto de una simulación.
  *
  * Las fotos viven en un store privado, así que no son accesibles por URL: se leen con
- * el token del servidor y solo después de comprobar sesión y dueño.
+ * el token del servidor y solo después de comprobar sesión. El acceso es compartido,
+ * así que cualquier sesión válida ve todas.
  */
 export async function GET(
   _req: Request,
@@ -23,16 +23,7 @@ export async function GET(
   const { id, cual } = await params;
   if (cual !== "antes" && cual !== "despues") return new Response("No encontrada.", { status: 404 });
 
-  // El id viene de la URL: la fila se carga de la base y se filtra por dueño, salvo
-  // que el rol pueda ver las de todo el equipo.
-  const filas = await db
-    .select()
-    .from(simulaciones)
-    .where(
-      canVerTodo(me.role)
-        ? eq(simulaciones.id, id)
-        : and(eq(simulaciones.id, id), eq(simulaciones.userId, me.id))
-    );
+  const filas = await db.select().from(simulaciones).where(eq(simulaciones.id, id));
   const fila = filas[0];
   if (!fila) return new Response("No encontrada.", { status: 404 });
 

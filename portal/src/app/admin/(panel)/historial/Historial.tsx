@@ -10,9 +10,9 @@ import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 import { marcarResultado, reactivarEnlace } from "./acciones";
 
 const ETIQUETA = {
-  pendiente: { texto: "Sin registrar", clase: "text-[var(--crm-ink-faint)]" },
-  ganado: { texto: "Ganado", clase: "text-[var(--crm-accent)]" },
-  perdido: { texto: "Perdido", clase: "text-[var(--crm-danger)]" },
+  pendiente: { texto: "sin registrar", clase: "text-[var(--crm-ink-mute)]" },
+  ganado: { texto: "vendido", clase: "text-[var(--crm-accent)]" },
+  perdido: { texto: "no vendido", clase: "text-[var(--crm-danger)]" },
 } as const;
 
 export function Historial({ prospectos }: { prospectos: ProspectoConSimulaciones[] }) {
@@ -20,7 +20,7 @@ export function Historial({ prospectos }: { prospectos: ProspectoConSimulaciones
 
   return (
     <>
-      <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {prospectos.map((p) => (
           <Tarjeta key={p.correo} prospecto={p} onAbrir={setAbierto} />
         ))}
@@ -88,17 +88,24 @@ function Tarjeta({
 
   return (
     <li className="overflow-hidden rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)]">
+      <div className="px-5 pt-4 pb-3">
+        <p className="truncate text-[17px] font-medium text-[var(--crm-ink)]">{prospecto.correo}</p>
+        <p className="mt-0.5 text-[15px] text-[var(--crm-ink-mute)]">
+          <span className="crm-num">{fmtDate(ultima.creadoEn)}</span> · {prospecto.asesor}
+        </p>
+      </div>
+
       <button
         type="button"
         onClick={() => onAbrir({ id: ultima.id, correo: prospecto.correo })}
-        className="group relative block w-full"
-        aria-label={`Abrir el caso de ${prospecto.correo}`}
+        className="block w-full"
+        aria-label={`Ver en grande el caso de ${prospecto.correo}`}
       >
         <span className="grid grid-cols-2 gap-px bg-[var(--crm-surface-3)]">
           {(["antes", "despues"] as const).map((cual) => (
             <span key={cual} className="relative block aspect-[3/4] bg-[var(--crm-surface-3)]">
               {cual === "despues" && !ultima.despuesUrl ? (
-                <span className="grid h-full place-items-center px-2 text-center text-[11.5px] text-[var(--crm-ink-faint)]">
+                <span className="grid h-full place-items-center px-2 text-center text-[14px] text-[var(--crm-ink-mute)]">
                   Sin completar
                 </span>
               ) : (
@@ -109,56 +116,34 @@ function Tarjeta({
                   className="h-full w-full object-contain"
                 />
               )}
+              <span className="absolute bottom-2 left-2 rounded-md bg-[var(--crm-ink)]/75 px-2 py-0.5 text-[13px] text-white">
+                {cual === "antes" ? "Actual" : "Simulación"}
+              </span>
             </span>
           ))}
         </span>
-        <span className="absolute inset-0 grid place-items-center bg-[var(--crm-ink)]/0 transition-colors group-hover:bg-[var(--crm-ink)]/25">
-          <Maximize2 className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+        <span className="flex min-h-11 items-center justify-center gap-2 text-[15px] text-[var(--crm-accent)] underline underline-offset-4">
+          <Maximize2 className="size-4" /> Ver en grande
         </span>
       </button>
 
-      <div className="px-4 py-4">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate text-[13.5px] font-medium text-[var(--crm-ink)]">{prospecto.correo}</p>
-          <span className={`shrink-0 text-[11.5px] ${et.clase}`}>{et.texto}</span>
-        </div>
-        <p className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--crm-ink-mute)]">
-          <span className="crm-num">{fmtDate(ultima.creadoEn)}</span>
-          {prospecto.asesor && <span className="truncate">· {prospecto.asesor}</span>}
-        </p>
-
-        {/* El folio identifica la generación cuando hay que hablar de una en concreto. */}
-        <button
-          onClick={copiarFolio}
-          title="Copiar el folio de esta simulación"
-          className="crm-num mt-2 flex w-full items-center gap-1.5 truncate text-left text-[11.5px] text-[var(--crm-ink-faint)] hover:text-[var(--crm-ink-mute)]"
-        >
-          <Copy className="size-3 shrink-0" />
-          <span className="truncate">{folioCopiado ? "Folio copiado" : ultima.id}</span>
-        </button>
-
-        {prospecto.vambe && (
-          <a
-            href={prospecto.vambe}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 text-[12.5px] text-[var(--crm-accent)] hover:underline"
-          >
-            <ExternalLink className="size-3.5" /> Ver en Vambe
-          </a>
-        )}
-
-        {/* El enlace es lo que se le manda al paciente, y caduca a las 24 horas. */}
-        {ultima.token && (
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={copiarEnlace}
-              disabled={!vigente}
-              className="crm-btn crm-btn-secondary crm-btn-sm flex-1 justify-center"
-            >
-              <Link2 className="size-3.5" /> {copiado ? "Copiado" : "Copiar enlace"}
-            </button>
-            {!vigente && (
+      <div className="space-y-4 px-5 pt-2 pb-5">
+        {/* El enlace es lo que se le manda al paciente, y caduca a las 24 horas. Vencido,
+            el único botón es el que lo revive: nada que adivinar. */}
+        {ultima.token &&
+          (vigente ? (
+            <div>
+              <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-lg w-full">
+                {copiado ? <Check className="size-5" /> : <Link2 className="size-5" />}
+                {copiado ? "Enlace copiado" : "Copiar enlace para el paciente"}
+              </button>
+              {copiado && (
+                <p className="mt-2 text-[15px] text-[var(--crm-ink)]">Péguelo en el WhatsApp del paciente.</p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <p className="mb-2 text-[15px] text-[var(--crm-ink)]">El enlace venció.</p>
               <button
                 onClick={() =>
                   iniciar(async () => {
@@ -166,46 +151,66 @@ function Tarjeta({
                   })
                 }
                 disabled={pendiente}
-                className="crm-btn crm-btn-secondary crm-btn-sm justify-center"
-                title="El enlace caducó: reactivarlo por otras 24 horas"
+                className="crm-btn crm-btn-secondary crm-btn-lg w-full"
               >
-                <RotateCw className="size-3.5" /> Reactivar
+                <RotateCw className="size-5" /> Reactivar el enlace por 24 horas
               </button>
-            )}
-          </div>
-        )}
+            </div>
+          ))}
 
-        <div className="mt-3">
-          <Calificar
-            valor={ultima.calificacion}
-            etiqueta="Calidad"
-            onCalificar={(n) => calificarSimulacion(ultima.id, n)}
-          />
+        <div>
+          <p className="mb-2 text-[16px] font-medium text-[var(--crm-ink)]">
+            ¿Se hizo la venta?{" "}
+            <span className={`text-[15px] font-normal ${et.clase}`}>({et.texto})</span>
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => marcar("ganado")}
+              disabled={pendiente}
+              aria-pressed={resultado === "ganado"}
+              className={`crm-btn crm-btn-lg ${resultado === "ganado" ? "crm-btn-primary" : "crm-btn-secondary"}`}
+            >
+              <Check className="size-5" /> Sí, se vendió
+            </button>
+            <button
+              onClick={() => marcar("perdido")}
+              disabled={pendiente}
+              aria-pressed={resultado === "perdido"}
+              className="crm-btn crm-btn-secondary crm-btn-lg"
+              style={
+                resultado === "perdido"
+                  ? { background: "var(--crm-danger)", borderColor: "var(--crm-danger)", color: "#fff" }
+                  : undefined
+              }
+            >
+              <X className="size-5" /> No se vendió
+            </button>
+          </div>
         </div>
 
-        <div className="mt-3 flex gap-2">
+        <Calificar
+          valor={ultima.calificacion}
+          etiqueta="Calidad de la simulación"
+          onCalificar={(n) => calificarSimulacion(ultima.id, n)}
+        />
+
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[14px]">
+          {prospecto.vambe && (
+            <a
+              href={prospecto.vambe}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-10 items-center gap-1.5 text-[var(--crm-accent)] underline underline-offset-4"
+            >
+              <ExternalLink className="size-4" /> Abrir en Vambe
+            </a>
+          )}
+          {/* El folio identifica la generación cuando hay que hablar de una en concreto. */}
           <button
-            onClick={() => marcar("ganado")}
-            disabled={pendiente}
-            aria-pressed={resultado === "ganado"}
-            className={`crm-btn crm-btn-sm flex-1 justify-center ${
-              resultado === "ganado" ? "crm-btn-primary" : "crm-btn-secondary"
-            }`}
+            onClick={copiarFolio}
+            className="inline-flex min-h-10 items-center gap-1.5 text-[var(--crm-ink-mute)] underline underline-offset-4"
           >
-            <Check className="size-3.5" /> Ganado
-          </button>
-          <button
-            onClick={() => marcar("perdido")}
-            disabled={pendiente}
-            aria-pressed={resultado === "perdido"}
-            className="crm-btn crm-btn-secondary crm-btn-sm flex-1 justify-center"
-            style={
-              resultado === "perdido"
-                ? { borderColor: "var(--crm-danger)", color: "var(--crm-danger)" }
-                : undefined
-            }
-          >
-            <X className="size-3.5" /> Perdido
+            <Copy className="size-4" /> {folioCopiado ? "Folio copiado" : "Copiar folio"}
           </button>
         </div>
       </div>

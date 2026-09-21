@@ -68,14 +68,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: var(--font-poppins);
   --font-mono: ui-monospace, SFMono-Regular, monospace;
   --radius-sm: calc(var(--radius) - 4px);
@@ -168,16 +160,6 @@
   --input: var(--crm-line-strong);
   --ring: var(--crm-accent-ring);
   --radius: 0.5rem;
-  /* El sidebar comparte el lienzo: sin caja blanca ni borde, se separa por aire.
-     Con fondo propio y pastillas de fondo se leía como consola genérica. */
-  --sidebar: var(--crm-bg);
-  --sidebar-foreground: var(--crm-ink-mute);
-  --sidebar-primary: var(--crm-accent);
-  --sidebar-primary-foreground: var(--crm-on-accent);
-  --sidebar-accent: transparent;
-  --sidebar-accent-foreground: var(--crm-ink);
-  --sidebar-border: transparent;
-  --sidebar-ring: var(--crm-accent-ring);
 
   background: var(--crm-bg);
   color: var(--crm-ink);
@@ -241,37 +223,6 @@
   background: var(--crm-surface);
   border-radius: var(--crm-r-lg);
 }
-/* Navegación: tipográfica y sin cajas. El activo se marca con una barra fina y
-   tinta fuerte, no con un relleno; el relleno es lo que la vuelve una consola. */
-[data-sidebar="menu-button"] {
-  height: auto !important;
-  padding: 0.5rem 0 0.5rem 0.75rem !important;
-  font-size: 15px !important;
-  font-weight: 400 !important;
-  border-radius: 0 !important;
-  border-left: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-[data-sidebar="menu-button"][data-active="true"] {
-  color: var(--crm-ink) !important;
-  border-left-color: var(--crm-accent);
-  font-weight: 500 !important;
-}
-[data-sidebar="group-label"] {
-  font-size: 10.5px !important;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--crm-ink-faint) !important;
-  margin-bottom: 0.35rem;
-}
-[data-sidebar="sidebar"] {
-  padding: 0.5rem 0.75rem;
-  background: var(--crm-bg) !important;
-  border-right: 0 !important;
-}
-/* Los iconos de la navegación estorban: la jerarquía la da la tipografía. */
-[data-sidebar="menu-button"] > svg { display: none; }
-
 /* La mesa de trabajo: una sola superficie donde ocurre todo. */
 .crm-mesa {
   background: var(--crm-surface);
@@ -330,6 +281,10 @@
 .crm-btn-ghost:hover { color: var(--crm-ink); }
 
 .crm-btn-sm { height: 34px; padding: 0 0.95rem; font-size: 13px; }
+/* Botones para el flujo de ejecutivos: grandes y con texto, pensados para personas
+   mayores. La claridad manda sobre la elegancia en estas pantallas. */
+.crm-btn-lg { height: 52px; padding: 0 1.25rem; font-size: 16px; font-weight: 500; }
+.crm-btn-xl { height: 64px; padding: 0 1.5rem; font-size: 19px; font-weight: 600; letter-spacing: 0.01em; }
 
 .crm-input,
 .crm-select,

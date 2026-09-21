@@ -24,13 +24,21 @@ export function Comparar({
   actual,
   simulacion,
   className = "",
+  posicion: controlada,
+  onPosicion,
 }: {
   actual: string;
   simulacion: string;
   className?: string;
+  // Opcional: quien lo usa puede mover el corte desde fuera, con botones grandes
+  // "Ver foto actual" / "Ver simulación" para quien no domina el gesto.
+  posicion?: number;
+  onPosicion?: (n: number) => void;
 }) {
   // 100 = solo la fotografía actual. 0 = solo la simulación.
-  const [posicion, setPosicion] = useState(50);
+  const [interna, setInterna] = useState(50);
+  const posicion = controlada ?? interna;
+  const setPosicion = onPosicion ?? setInterna;
   const [pulsando, setPulsando] = useState(false);
   const cajaRef = useRef<HTMLDivElement>(null);
   const arrastrando = useRef(false);
@@ -39,13 +47,13 @@ export function Comparar({
     const caja = cajaRef.current?.getBoundingClientRect();
     if (!caja) return;
     setPosicion(Math.min(100, Math.max(0, ((clienteX - caja.left) / caja.width) * 100)));
-  }, []);
+  }, [setPosicion]);
 
   const soltar = useCallback(() => {
     if (!arrastrando.current) setPosicion(100);
     arrastrando.current = false;
     setPulsando(false);
-  }, []);
+  }, [setPosicion]);
 
   return (
     <div
@@ -83,7 +91,8 @@ export function Comparar({
         className="pointer-events-none absolute inset-y-0 w-px bg-white/85"
         style={{
           left: `${posicion}%`,
-          opacity: pulsando ? 0 : 1,
+          // En los extremos el tirador queda pegado al borde y estorba: se esconde.
+          opacity: pulsando || posicion <= 0 || posicion >= 100 ? 0 : 1,
           transition: pulsando ? "none" : "left 180ms ease-out, opacity 180ms ease-out",
         }}
       >
@@ -110,6 +119,28 @@ export function Comparar({
           Simulación
         </span>
       )}
+    </div>
+  );
+}
+
+/** Los dos botones grandes para cambiar de foto: 100 = foto actual, 0 = simulación. */
+export function BotonesVista({ vista, onVista }: { vista: number; onVista: (n: number) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-2" role="group" aria-label="Qué foto ver">
+      {[
+        { texto: "Ver foto actual", valor: 100 },
+        { texto: "Ver simulación", valor: 0 },
+      ].map((b) => (
+        <button
+          key={b.valor}
+          type="button"
+          aria-pressed={vista === b.valor}
+          onClick={() => onVista(b.valor)}
+          className={`crm-btn crm-btn-lg ${vista === b.valor ? "crm-btn-primary" : "crm-btn-secondary"}`}
+        >
+          {b.texto}
+        </button>
+      ))}
     </div>
   );
 }

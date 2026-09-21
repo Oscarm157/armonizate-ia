@@ -11,9 +11,10 @@ import {
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { GRADOS, type Grado } from "@/lib/simulador/grado";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
-import { Comparar } from "./Comparar";
+import { BotonesVista, Comparar } from "./Comparar";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
+import { DibujoGrado } from "./DibujoGrado";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 
 type Estado = "vacio" | "listo" | "generando" | "hecho" | "error";
@@ -29,7 +30,15 @@ const GUIA = [
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
+export function Simulador({
+  usadas,
+  tope,
+  ejecutivos,
+}: {
+  usadas: number;
+  tope: number;
+  ejecutivos: { id: string; nombre: string }[];
+}) {
   const [estado, setEstado] = useState<Estado>("vacio");
   const [error, setError] = useState<string | null>(null);
   const [consumo, setConsumo] = useState(usadas);
@@ -37,13 +46,23 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const [resultado, setResultado] = useState<string | null>(null);
   const [entregas, setEntregas] = useState<Entrega[]>([]);
   const [grado, setGrado] = useState<Grado | null>(null);
+  // Se elige en cada simulación, a propósito sin recordar el anterior: el acceso es
+  // compartido y el mismo equipo lo usan varias personas.
+  const [ejecutivoId, setEjecutivoId] = useState("");
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
   const [simulacionId, setSimulacionId] = useState<string | null>(null);
   const [enlace, setEnlace] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
+  // Copiar el aviso "Enlace copiado" dura 2 s; esto recuerda que ya se copió para
+  // marcar el paso como LISTO y pasar el resaltado al siguiente.
+  const [yaCopio, setYaCopio] = useState(false);
   const [folioCopiado, setFolioCopiado] = useState(false);
   const [repeticiones, setRepeticiones] = useState(0);
+  // Paso que el ejecutivo reabrió con "Cambiar"; null = el primero sin terminar.
+  const [editando, setEditando] = useState<number | null>(null);
+  // Qué se ve en el comparador: 100 = foto actual, 0 = simulación.
+  const [vista, setVista] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   // La foto tal como la subió el vendedor, sin reducir ni recomprimir. Es sobre esta
   // que se compone: usar la versión reducida (la que se sube por el límite de la
@@ -60,7 +79,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   const agotado = consumo >= tope;
   const correoOk = CORREO.test(correo.trim());
   const vambeOk = /^https?:\/\/\S+$/.test(vambe.trim());
-  const datosListos = correoOk && vambeOk;
+  const datosListos = !!ejecutivoId && correoOk && vambeOk;
   const listoParaGenerar = !!grado && datosListos;
 
   const cargar = useCallback(async (file: File) => {
@@ -115,6 +134,7 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
           cabeza: c.toDataURL("image/jpeg", 0.95),
           original,
           grado,
+          ejecutivoId,
           correo: correo.trim(),
           vambe: vambe.trim(),
         }),
@@ -166,12 +186,13 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
       setError(e instanceof Error ? e.message : "No se pudo generar la simulación.");
       setEstado("error");
     }
-  }, [original, grado, correo, vambe, consumo]);
+  }, [original, grado, ejecutivoId, correo, vambe, consumo]);
 
   const copiarEnlace = async () => {
     if (!enlace) return;
     await navigator.clipboard.writeText(enlace);
     setCopiado(true);
+    setYaCopio(true);
     setTimeout(() => setCopiado(false), 2000);
   };
 
@@ -189,12 +210,16 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     setEntregas([]);
     setError(null);
     setGrado(null);
+    setEjecutivoId("");
     setCorreo("");
     setVambe("");
     setSimulacionId(null);
     setEnlace(null);
     setFolioCopiado(false);
     setRepeticiones(0);
+    setEditando(null);
+    setVista(0);
+    setYaCopio(false);
     finalRef.current = null;
     fotoRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
@@ -208,55 +233,90 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
     else descargar(actualYSimulacion(f.actual, f.simulacion), `${base}-comparativa.jpg`);
   };
 
-  const paso = !original ? 1 : !grado ? 2 : !datosListos ? 3 : 4;
+  // Lo que falta, en palabras. Se enseña junto al botón de generar para que nadie
+  // tenga que adivinar por qué no se puede todavía.
+  const faltantes = [
+    !original && "la foto del paciente",
+    !grado && "el grado del caso",
+    !ejecutivoId && "el nombre del ejecutivo",
+    !correoOk && "el correo del paciente",
+    !vambeOk && "el enlace de Vambe",
+  ].filter(Boolean) as string[];
+
+  // El paso en curso: el primero sin terminar, salvo que el ejecutivo haya pedido
+  // cambiar uno ya hecho.
+  const siguiente = !original ? 1 : !grado ? 2 : !datosListos ? 3 : 4;
+  const actual = editando ?? siguiente;
+  const ocupado = estado === "generando";
+  const tituloGrado = GRADOS.find((g) => g.valor === grado)?.titulo;
+
+  const abrirSelector = () => inputRef.current?.click();
+
+  // Al cambiar de paso, la pantalla va sola al que toca: en el celular queda debajo de
+  // la foto, y al terminar de generar el enlace quedaba fuera de vista.
+  const pasosRef = useRef<HTMLDivElement>(null);
+  const primeraVez = useRef(true);
+  useEffect(() => {
+    if (primeraVez.current) {
+      primeraVez.current = false;
+      return;
+    }
+    pasosRef.current
+      ?.querySelector('[aria-current="step"]')
+      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [actual, estado]);
 
   return (
     <>
-      {/* Una sola mesa de trabajo: la fotografía y el control comparten superficie.
-          Dos cajas sueltas lado a lado se leían como formulario de plantilla. */}
-      <div className="crm-mesa grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_340px] lg:gap-12 lg:p-10">
-        {/* Fotografía */}
-        <div className="relative">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) {
+            setEditando(null);
+            cargar(f);
+          }
+        }}
+      />
+
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(360px,440px)] md:items-start">
+        {/* Fotografía. Queda fija mientras se avanza por los pasos. */}
+        <div className="md:sticky md:top-4">
           <div
-            className={`relative w-full overflow-hidden rounded-[var(--crm-r-md)] ${
+            className={`relative w-full overflow-hidden rounded-[var(--crm-r-lg)] ${
               original
-                ? "aspect-[4/5] max-h-[46dvh] bg-[var(--crm-surface-3)] lg:max-h-[560px]"
-                : "aspect-[5/4] max-h-[34dvh] bg-[var(--crm-accent)] lg:max-h-[420px]"
+                ? "aspect-[4/5] max-h-[60dvh] bg-[var(--crm-surface)] md:max-h-[min(620px,78dvh)]"
+                : "aspect-[4/5] max-h-[40dvh] bg-[var(--crm-surface)] md:max-h-[min(620px,78dvh)]"
             }`}
           >
             {!original && (
-              <label
+              <button
+                type="button"
+                onClick={abrirSelector}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
                   const f = e.dataTransfer.files?.[0];
                   if (f) cargar(f);
                 }}
-                className="group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-4 px-8 text-center transition-colors hover:bg-[var(--crm-accent-soft)]"
+                className="flex h-full w-full flex-col items-center justify-center gap-3 border-2 border-dashed border-[var(--crm-line-strong)] px-8 text-center text-[var(--crm-ink-mute)] hover:border-[var(--crm-accent)] hover:text-[var(--crm-ink)]"
               >
-                <span className="grid size-14 place-items-center rounded-full border border-white/35 text-white transition-transform group-hover:scale-105">
-                  <ImageUp className="size-6" strokeWidth={1.5} />
-                </span>
-                <span className="text-[19px] font-light text-white">Fotografía del paciente</span>
-                <span className="max-w-[34ch] text-[13px] leading-relaxed text-white/70">
-                  Arrastre la imagen o toque para elegirla desde el teléfono
-                </span>
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) cargar(f);
-                  }}
-                />
-              </label>
+                <ImageUp className="size-10" strokeWidth={1.5} />
+                <span className="text-[17px]">Aquí aparecerá la foto del paciente</span>
+              </button>
             )}
 
             {estado === "hecho" && original && resultado && (
-              <Comparar actual={original} simulacion={resultado} className="h-full w-full" />
+              <Comparar
+                actual={original}
+                simulacion={resultado}
+                posicion={vista}
+                onPosicion={setVista}
+                className="h-full w-full"
+              />
             )}
 
             {estado !== "hecho" && original && (
@@ -264,90 +324,135 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
               <img src={original} alt="Fotografía del paciente" className="h-full w-full object-contain" />
             )}
 
-            {estado === "generando" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[var(--crm-ink)]/35 backdrop-blur-[2px]">
-                <span className="rounded-full bg-[var(--crm-surface)] px-4 py-2 text-[13px] text-[var(--crm-ink)]">
-                  Generando la simulación
-                </span>
-                <span className="text-[12px] text-white/85">Tarda alrededor de 15 segundos</span>
+            {ocupado && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--crm-ink)]/60 px-6 text-center">
+                <Sparkles className="size-8 animate-pulse text-white" />
+                <span className="text-[20px] font-medium text-white">Generando la simulación</span>
+                <span className="text-[16px] text-white/90">Tarda unos 15 segundos. No cierre esta ventana.</span>
               </div>
             )}
           </div>
 
           {estado === "hecho" && (
-            <div className="flex flex-col items-center gap-4 pt-5">
-              <p className="text-[12.5px] text-[var(--crm-ink-mute)]">
-                Mantenga pulsada la imagen para ver la simulación, o arrastre el control
-              </p>
-              {simulacionId && (
-                <Calificar valor={null} onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
-              )}
+            <div className="mt-3">
+              <BotonesVista vista={vista} onVista={setVista} />
             </div>
           )}
         </div>
 
-        {/* Control. Terminada la simulación, aquí manda el enlace: es lo que se le manda
-            al paciente y lo que sustituye al envío de la fotografía. */}
-        <div className="border-t border-[var(--crm-line)] pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-12">
-          {estado === "hecho" ? (
-            <div className="space-y-7">
-              {enlace && (
-                <div>
-                  <p className="crm-eyebrow mb-3">Enlace para el paciente</p>
-                  <p className="crm-num truncate rounded-[var(--crm-r-sm)] bg-[var(--crm-surface-3)] px-3 py-2.5 text-[12px] text-[var(--crm-ink-mute)]">
-                    {enlace}
-                  </p>
-                  <button
-                    onClick={copiarEnlace}
-                    className="crm-btn crm-btn-primary mt-3 w-full justify-center"
-                  >
-                    <Link2 className="size-4" /> {copiado ? "Enlace copiado" : "Copiar enlace"}
-                  </button>
-                  <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
-                    Vence en {HORAS_VIGENCIA} horas. Puede reactivarlo desde el historial sin gastar
-                    otra simulación.
-                  </p>
-                </div>
-              )}
-              {/* El folio es lo que se cita para volver a esta generación: sin él, dar
-                  con una simulación concreta obliga a buscarla a mano en el historial. */}
-              {simulacionId && (
-                <div>
-                  <p className="crm-eyebrow mb-2">Folio de la simulación</p>
-                  <div className="flex items-center gap-2">
-                    <p className="crm-num min-w-0 flex-1 truncate rounded-[var(--crm-r-sm)] bg-[var(--crm-surface-3)] px-3 py-2 text-[12px] text-[var(--crm-ink-mute)]">
-                      {simulacionId}
-                    </p>
-                    <button
-                      onClick={copiarFolio}
-                      className="crm-btn crm-btn-secondary crm-btn-sm shrink-0"
-                    >
-                      <Copy className="size-3.5" /> {folioCopiado ? "Copiado" : "Copiar"}
-                    </button>
-                  </div>
-                </div>
-              )}
+        {/* Pasos */}
+        <div ref={pasosRef} className="flex scroll-mt-4 flex-col gap-3">
+          {error && (
+            <p
+              className="flex items-start gap-3 rounded-[var(--crm-r-md)] border-2 border-[var(--crm-danger)] bg-[var(--crm-surface)] px-4 py-3.5 text-[16px] text-[var(--crm-ink)]"
+              role="alert"
+            >
+              <AlertCircle className="mt-0.5 size-5 shrink-0 text-[var(--crm-danger)]" />
+              {error}
+            </p>
+          )}
 
-              {entregas.length > 0 && <Entregas entregas={entregas} onDescargar={bajar} />}
-            </div>
-          ) : (
-            <ol className="space-y-6">
-              <Paso n={1} activo={paso === 1} hecho={!!original} texto="Fotografía">
-                {!original && (
-                  <ul className="mt-2 space-y-1">
-                    {GUIA.map((g) => (
-                      <li key={g} className="text-[12.5px] text-[var(--crm-ink-mute)]">
-                        {g}
-                      </li>
-                    ))}
-                  </ul>
+          {agotado && estado !== "hecho" && (
+            <p className="rounded-[var(--crm-r-md)] border-2 border-[var(--crm-danger)] bg-[var(--crm-surface)] px-4 py-3.5 text-[16px] text-[var(--crm-ink)]">
+              Ya se usaron las {tope} simulaciones de este mes. Se reinicia el día 1.
+            </p>
+          )}
+
+          {estado === "hecho" ? (
+            <>
+              <Paso n={1} total={3} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copie el enlace y mándelo al paciente por WhatsApp">
+                {enlace && (
+                  <>
+                    <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-xl w-full">
+                      {copiado ? <Check className="size-5" /> : <Link2 className="size-5" />}
+                      {copiado ? "Enlace copiado" : "Copiar enlace para el paciente"}
+                    </button>
+                    <p className="mt-3 text-[16px] text-[var(--crm-ink)]">
+                      {yaCopio
+                        ? "Listo. Ahora péguelo en la conversación de WhatsApp del paciente."
+                        : `El paciente lo abre en su teléfono. Dura ${HORAS_VIGENCIA} horas.`}
+                    </p>
+                  </>
                 )}
               </Paso>
 
-              {/* El grado va aquí y no junto a los datos del paciente: es una propiedad
-                  del caso y se elige mirando la fotografía, que está al lado. */}
-              <Paso n={2} activo={paso === 2} hecho={!!grado} texto="Grado del caso">
-                <div className="mt-2.5 space-y-1.5" role="radiogroup" aria-label="Grado del caso">
+              <Paso n={2} total={3} estado="abierto" titulo="Califique cómo quedó (opcional)">
+                {simulacionId && (
+                  <Calificar grande valor={null} etiqueta="" onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
+                )}
+              </Paso>
+
+              <Paso n={3} total={3} estado={yaCopio ? "actual" : "abierto"} titulo="Para otro paciente, empiece de nuevo">
+                <button onClick={reiniciar} className="crm-btn crm-btn-secondary crm-btn-lg w-full">
+                  Hacer otra simulación
+                </button>
+              </Paso>
+
+              {repeticiones < 1 && !agotado && (
+                <button
+                  onClick={() => {
+                    setRepeticiones((n) => n + 1);
+                    generar();
+                  }}
+                  className="mx-auto flex min-h-11 items-center gap-2 text-[15px] text-[var(--crm-ink-mute)] underline underline-offset-4"
+                >
+                  <RotateCcw className="size-4" /> No quedó bien. Vuelva a generar
+                </button>
+              )}
+
+              <details className="rounded-[var(--crm-r-md)] bg-[var(--crm-surface)] px-4 py-3">
+                <summary className="min-h-10 cursor-pointer py-2 text-[15px] text-[var(--crm-ink-mute)]">
+                  Descargar las imágenes o ver el folio
+                </summary>
+                <div className="space-y-5 pt-3 pb-2">
+                  {simulacionId && (
+                    <div>
+                      <p className="mb-2 text-[14px] text-[var(--crm-ink-mute)]">Folio de la simulación</p>
+                      <div className="flex items-center gap-2">
+                        <p className="crm-num min-w-0 flex-1 truncate rounded-[var(--crm-r-sm)] bg-[var(--crm-surface-3)] px-3 py-2.5 text-[13px] text-[var(--crm-ink-mute)]">
+                          {simulacionId}
+                        </p>
+                        <button onClick={copiarFolio} className="crm-btn crm-btn-secondary shrink-0">
+                          <Copy className="size-4" /> {folioCopiado ? "Copiado" : "Copiar"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {entregas.length > 0 && <Entregas entregas={entregas} onDescargar={bajar} />}
+                </div>
+              </details>
+            </>
+          ) : (
+            <>
+              <Paso
+                n={1}
+                estado={actual === 1 ? "actual" : original ? "listo" : "falta"}
+                titulo="Suba la foto del paciente"
+                resumen="Foto cargada"
+                onCambiar={ocupado ? undefined : abrirSelector}
+              >
+                <button onClick={abrirSelector} disabled={ocupado} className="crm-btn crm-btn-primary crm-btn-lg w-full">
+                  <ImageUp className="size-5" /> Elegir foto
+                </button>
+                <p className="mt-4 mb-2 text-[15px] text-[var(--crm-ink)]">La foto debe ser:</p>
+                <ul className="space-y-1.5">
+                  {GUIA.map((g) => (
+                    <li key={g} className="flex items-start gap-2 text-[15px] text-[var(--crm-ink-soft)]">
+                      <Check className="mt-1 size-4 shrink-0 text-[var(--crm-accent)]" /> {g}
+                    </li>
+                  ))}
+                </ul>
+              </Paso>
+
+              {/* El grado se elige mirando la foto, que está al lado. */}
+              <Paso
+                n={2}
+                estado={actual === 2 ? "actual" : grado ? "listo" : "falta"}
+                titulo="Elija qué tan separadas están las orejas"
+                resumen={tituloGrado}
+                onCambiar={original && !ocupado ? () => setEditando(2) : undefined}
+              >
+                <div className="space-y-2" role="radiogroup" aria-label="Grado del caso">
                   {GRADOS.map((g) => {
                     const puesto = grado === g.valor;
                     return (
@@ -356,21 +461,25 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                         type="button"
                         role="radio"
                         aria-checked={puesto}
-                        onClick={() => setGrado(g.valor)}
-                        disabled={estado === "generando"}
-                        className={`block w-full rounded-[var(--crm-r-md)] px-3.5 py-2.5 text-left transition-colors ${
+                        onClick={() => {
+                          setGrado(g.valor);
+                          setEditando(null);
+                        }}
+                        disabled={ocupado}
+                        className={`block w-full rounded-[var(--crm-r-md)] border-2 px-3 py-3 text-left transition-colors ${
                           puesto
-                            ? "bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
-                            : "bg-[var(--crm-surface-3)] text-[var(--crm-ink)] hover:bg-[var(--crm-accent-tint)]"
+                            ? "border-[var(--crm-accent)] bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
+                            : "border-[var(--crm-line-strong)] bg-[var(--crm-surface)] text-[var(--crm-ink)] hover:border-[var(--crm-accent)]"
                         }`}
                       >
-                        <span className="block text-[13.5px]">{g.titulo}</span>
-                        <span
-                          className={`mt-0.5 block text-[12px] leading-snug ${
-                            puesto ? "text-[var(--crm-on-accent)]/75" : "text-[var(--crm-ink-mute)]"
-                          }`}
-                        >
-                          {g.pie}
+                        <span className="flex items-center gap-3">
+                          <DibujoGrado grado={g.valor} className="size-16 shrink-0 rounded-[10px] bg-[var(--crm-surface)] text-[var(--crm-ink)]" />
+                          <span>
+                            <span className="block text-[17px] font-medium">{g.titulo}</span>
+                            <span className={`mt-0.5 block text-[15px] ${puesto ? "text-white/85" : "text-[var(--crm-ink-mute)]"}`}>
+                              {g.pie}
+                            </span>
+                          </span>
                         </span>
                       </button>
                     );
@@ -378,105 +487,97 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
                 </div>
               </Paso>
 
-              <Paso n={3} activo={paso === 3} hecho={datosListos} texto="Datos del paciente">
-                <div className="mt-2.5 space-y-2.5">
-                  <input
+              {/* Este paso no se cierra solo al quedar completo: se cerraría a mitad de
+                  escribir el enlace. Queda abierto hasta generar. */}
+              <Paso
+                n={3}
+                estado={actual === 3 ? "actual" : datosListos ? "listo-abierto" : "falta"}
+                titulo="Escriba los datos del ejecutivo y del paciente"
+              >
+                <div className="space-y-4">
+                  <Campo id="ejecutivo" etiqueta="Nombre del ejecutivo">
+                    <select
+                      id="ejecutivo"
+                      className="crm-input text-[16px]!"
+                      value={ejecutivoId}
+                      onChange={(e) => setEjecutivoId(e.target.value)}
+                      disabled={ocupado}
+                    >
+                      <option value="" disabled>
+                        Elija el nombre del ejecutivo
+                      </option>
+                      {ejecutivos.map((e) => (
+                        <option key={e.id} value={e.id}>
+                          {e.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </Campo>
+                  <Campo
                     id="correo"
-                    className="crm-input"
-                    type="email"
-                    inputMode="email"
-                    autoComplete="off"
-                    placeholder="Correo del paciente"
-                    value={correo}
-                    onChange={(e) => setCorreo(e.target.value)}
-                    disabled={estado === "generando"}
-                  />
-                  <input
+                    etiqueta="Correo del paciente"
+                    aviso={correo.trim() && !correoOk ? "Revise el correo. Debe verse así: nombre@correo.com" : undefined}
+                  >
+                    <input
+                      id="correo"
+                      className="crm-input text-[16px]!"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="off"
+                      value={correo}
+                      onChange={(e) => setCorreo(e.target.value)}
+                      disabled={ocupado}
+                    />
+                  </Campo>
+                  <Campo
                     id="vambe"
-                    className="crm-input"
-                    type="url"
-                    autoComplete="off"
-                    placeholder="Enlace del contacto en Vambe"
-                    value={vambe}
-                    onChange={(e) => setVambe(e.target.value)}
-                    disabled={estado === "generando"}
-                  />
-                  <p className="text-[12px] leading-relaxed text-[var(--crm-ink-faint)]">
-                    El enlace de Vambe se copia desde la conversación del contacto.
-                  </p>
+                    etiqueta="Enlace del paciente en Vambe"
+                    ayuda="Cópielo desde la conversación del paciente en Vambe."
+                    aviso={vambe.trim() && !vambeOk ? "Pegue el enlace completo. Empieza con https://" : undefined}
+                  >
+                    <input
+                      id="vambe"
+                      className="crm-input text-[16px]!"
+                      type="url"
+                      autoComplete="off"
+                      value={vambe}
+                      onChange={(e) => setVambe(e.target.value)}
+                      disabled={ocupado}
+                    />
+                  </Campo>
                 </div>
               </Paso>
 
-              <Paso n={4} activo={paso === 4} hecho={false} texto="Generar y enviar el enlace" />
-            </ol>
+              <Paso n={4} estado={actual === 4 ? "actual" : "falta"} titulo="Genere la simulación" siempreAbierto>
+                <button
+                  onClick={generar}
+                  disabled={!listoParaGenerar || agotado || ocupado}
+                  className="crm-btn crm-btn-primary crm-btn-xl w-full"
+                >
+                  <Sparkles className={`size-5 ${ocupado ? "animate-pulse" : ""}`} />
+                  {ocupado ? "Generando…" : "Generar simulación"}
+                </button>
+                {faltantes.length > 0 && !ocupado && (
+                  <p className="mt-3 text-[15px] text-[var(--crm-ink)]">
+                    <span className="font-medium">Falta:</span> {faltantes.join(", ")}.
+                  </p>
+                )}
+              </Paso>
+            </>
           )}
-
-          {error && (
-            <p
-              className="mt-5 flex items-start gap-2 rounded-[var(--crm-r-sm)] bg-[var(--crm-danger)]/8 px-3 py-2.5 text-[13px] text-[var(--crm-ink)]"
-              role="alert"
-            >
-              <AlertCircle className="mt-px size-4 shrink-0 text-[var(--crm-danger)]" />
-              {error}
-            </p>
-          )}
-
-          {agotado && !error && (
-            <p className="mt-5 rounded-[var(--crm-r-sm)] bg-[var(--crm-danger)]/8 px-3 py-2.5 text-[13px] text-[var(--crm-ink)]">
-              Alcanzó el límite de {tope} simulaciones de este mes. Se restablece el día 1.
-            </p>
-          )}
-
-          <div className="mt-8 flex flex-col gap-3">
-            {estado !== "generando" && estado !== "hecho" && original && (
-              <button
-                onClick={generar}
-                disabled={!listoParaGenerar || agotado}
-                className="crm-btn crm-btn-primary w-full justify-center"
-              >
-                <Sparkles className="size-4" /> Generar simulación
-              </button>
-            )}
-
-            {estado === "generando" && (
-              <button disabled className="crm-btn crm-btn-primary w-full justify-center">
-                <Sparkles className="size-4 animate-pulse" /> Generando…
-              </button>
-            )}
-
-            {original && (
-              <button onClick={reiniciar} className="crm-btn crm-btn-secondary w-full justify-center">
-                Cargar otra fotografía
-              </button>
-            )}
-
-            {/* Repetir queda discreto: entre corridas el resultado apenas cambia y como
-                botón invita a gastar cuota persiguiendo una mejora que no llega. */}
-            {estado === "hecho" && repeticiones < 1 && !agotado && (
-              <button
-                onClick={() => {
-                  setRepeticiones((n) => n + 1);
-                  generar();
-                }}
-                className="mx-auto mt-1 flex items-center gap-1.5 text-[12.5px] text-[var(--crm-ink-faint)] underline underline-offset-4 hover:text-[var(--crm-ink-mute)]"
-              >
-                <RotateCcw className="size-3.5" /> Generar otra vez
-              </button>
-            )}
-          </div>
         </div>
       </div>
 
       {/* El aviso, tal cual lo ve el paciente en el enlace. Está aquí para que el asesor
           sepa exactamente con qué texto se entrega y no prometa de más en la conversación. */}
       <div className="crm-mesa mt-7 p-6 sm:p-8">
-        <p className="text-[14.5px] text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
-        <p className="mt-2 max-w-[70ch] text-[13px] leading-relaxed text-[var(--crm-ink-mute)]">
+        <p className="text-[16px] text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
+        <p className="mt-2 max-w-[70ch] text-[15px] leading-relaxed text-[var(--crm-ink-soft)]">
           {LEGAL_CUERPO}
         </p>
         {/* "Calibrado" y no "entrenado": el modelo que corre es nano-banana con el prompt
             ajustado contra esos casos, no el LoRA. Es cierto y se sostiene si preguntan. */}
-        <p className="mt-4 text-[12px] text-[var(--crm-ink-faint)]">
+        <p className="mt-4 text-[13px] text-[var(--crm-ink-faint)]">
           Calibrado con más de 100 casos reales de Otomodelación Belab. Proyecto en mejora continua.
         </p>
       </div>
@@ -484,30 +585,111 @@ export function Simulador({ usadas, tope }: { usadas: number; tope: number }) {
   );
 }
 
+type EstadoPaso = "actual" | "listo" | "listo-abierto" | "abierto" | "falta";
+
+/**
+ * Un paso del flujo. El que toca ahora va resaltado en azul y abierto; los terminados
+ * dicen LISTO y se pueden reabrir; los que faltan se ven, cerrados, para que se sepa
+ * qué viene. El estado va en palabra además de color.
+ */
 function Paso({
-  n, activo, hecho, texto, children,
+  n, total = 4, estado, titulo, resumen, onCambiar, siempreAbierto = false, children,
 }: {
   n: number;
-  activo: boolean;
-  hecho: boolean;
-  texto: string;
+  total?: number;
+  estado: EstadoPaso;
+  titulo: string;
+  resumen?: string;
+  onCambiar?: () => void;
+  siempreAbierto?: boolean;
   children?: React.ReactNode;
 }) {
+  const esActual = estado === "actual";
+  const listo = estado === "listo" || estado === "listo-abierto";
+  const abierto = esActual || estado === "abierto" || estado === "listo-abierto" || siempreAbierto;
+  const etiqueta = esActual ? "Ahora" : listo ? "Listo" : estado === "falta" ? "Falta" : null;
+
   return (
-    <li className={activo || hecho ? "" : "opacity-35"}>
-      <div className="flex items-baseline gap-3">
-        {/* Número en tipografía, no en circulito: el circulito numerado es el detalle
-            que más delata una interfaz de plantilla. */}
+    <section
+      aria-current={esActual ? "step" : undefined}
+      className={`rounded-[var(--crm-r-lg)] border-2 px-4 py-4 sm:px-5 ${
+        esActual
+          ? "border-[var(--crm-accent)] bg-[var(--crm-accent-tint-2)]"
+          : listo || estado === "abierto"
+            ? "border-transparent bg-[var(--crm-surface)]"
+            : "border-transparent bg-[var(--crm-surface-3)]"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        {/* Número en bloque y no en circulito: regla del proyecto (DESIGN.md). */}
         <span
-          className={`w-4 shrink-0 text-[15px] font-light tabular-nums ${
-            hecho ? "text-[var(--crm-accent)]" : "text-[var(--crm-ink-faint)]"
+          className={`grid size-10 shrink-0 place-items-center rounded-[10px] text-[18px] font-semibold ${
+            esActual
+              ? "bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
+              : listo
+                ? "bg-[var(--crm-accent-tint-2)] text-[var(--crm-accent)]"
+                : "bg-[var(--crm-line)] text-[var(--crm-ink-mute)]"
           }`}
+          aria-hidden
         >
-          {hecho ? <Check className="size-3.5" strokeWidth={2.5} /> : n}
+          {listo ? <Check className="size-5" strokeWidth={2.75} /> : n}
         </span>
-        <span className="text-[14.5px] text-[var(--crm-ink)]">{texto}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-semibold tracking-[0.06em] text-[var(--crm-ink-mute)] uppercase">
+            Paso {n} de {total}
+            {etiqueta && (
+              <span className={esActual ? "text-[var(--crm-accent)]" : listo ? "text-[var(--crm-accent)]" : ""}>
+                {" · "}
+                {etiqueta}
+              </span>
+            )}
+          </p>
+          <h2
+            className={`text-[17px] leading-snug font-medium ${
+              estado === "falta" && !siempreAbierto ? "text-[var(--crm-ink-mute)]" : "text-[var(--crm-ink)]"
+            }`}
+          >
+            {titulo}
+          </h2>
+          {estado === "listo" && resumen && <p className="text-[15px] text-[var(--crm-ink-soft)]">{resumen}</p>}
+        </div>
+        {estado === "listo" && onCambiar && (
+          <button
+            type="button"
+            onClick={onCambiar}
+            className="min-h-11 shrink-0 px-2 text-[15px] text-[var(--crm-accent)] underline underline-offset-4"
+          >
+            Cambiar
+          </button>
+        )}
       </div>
-      {children ? <div className="mt-2 pl-7">{children}</div> : null}
-    </li>
+      {abierto && children ? <div className="mt-4">{children}</div> : null}
+    </section>
+  );
+}
+
+function Campo({
+  id, etiqueta, ayuda, aviso, children,
+}: {
+  id: string;
+  etiqueta: string;
+  ayuda?: string;
+  aviso?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-[15px] font-medium text-[var(--crm-ink)]">
+        {etiqueta}
+      </label>
+      {children}
+      {aviso ? (
+        <p className="mt-1.5 text-[14.5px] text-[var(--crm-danger)]" role="alert">
+          {aviso}
+        </p>
+      ) : ayuda ? (
+        <p className="mt-1.5 text-[14px] text-[var(--crm-ink-mute)]">{ayuda}</p>
+      ) : null}
+    </div>
   );
 }

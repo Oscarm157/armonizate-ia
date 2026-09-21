@@ -27,7 +27,7 @@ export default async function LoginPage() {
         <div className="rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-7 py-8">
           <h1 className="crm-display text-[26px]!">Simulador</h1>
           <p className="mt-1 mb-6 text-[13.5px] text-[var(--crm-ink-mute)]">
-            Acceso para el equipo de la clínica.
+            Escriba la clave de acceso de la clínica.
           </p>
           <LoginForm />
         </div>
