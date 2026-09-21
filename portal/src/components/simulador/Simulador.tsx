@@ -19,6 +19,14 @@ import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 
 type Estado = "vacio" | "listo" | "generando" | "hecho" | "error";
 
+type Opcion = {
+  id: string | null;
+  enlace: string | null;
+  resultado: string;
+  final: { simulacion: HTMLCanvasElement; actual: HTMLImageElement };
+  entregas: Entrega[];
+};
+
 const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 
 const GUIA = [
@@ -43,16 +51,18 @@ export function Simulador({
   const [error, setError] = useState<string | null>(null);
   const [consumo, setConsumo] = useState(usadas);
   const [original, setOriginal] = useState<string | null>(null);
-  const [resultado, setResultado] = useState<string | null>(null);
-  const [entregas, setEntregas] = useState<Entrega[]>([]);
+  // Cada generación es una opción. Normalmente hay una; si el ejecutivo pide otra
+  // porque la primera no quedó bien, se quedan las dos para que elija cuál mandar: el
+  // modelo varía entre corridas y no hay forma automática fiable de saber cuál salió
+  // mejor (probado el 2026-09-21), el ojo del ejecutivo sí lo sabe.
+  const [opciones, setOpciones] = useState<Opcion[]>([]);
+  const [elegida, setElegida] = useState(0);
   const [grado, setGrado] = useState<Grado | null>(null);
   // Se elige en cada simulación, a propósito sin recordar el anterior: el acceso es
   // compartido y el mismo equipo lo usan varias personas.
   const [ejecutivoId, setEjecutivoId] = useState("");
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
-  const [simulacionId, setSimulacionId] = useState<string | null>(null);
-  const [enlace, setEnlace] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
   // Copiar el aviso "Enlace copiado" dura 2 s; esto recuerda que ya se copió para
   // marcar el paso como LISTO y pasar el resaltado al siguiente.
@@ -69,7 +79,6 @@ export function Simulador({
   // petición) hacía que la entrega saliera a la resolución de entrada y no a la del
   // modelo, que genera en 2K.
   const fotoRef = useRef<HTMLImageElement | null>(null);
-  const finalRef = useRef<{ simulacion: HTMLCanvasElement; actual: HTMLImageElement } | null>(null);
 
   // El logo va impreso en las imágenes; se trae mientras el vendedor captura la foto.
   useEffect(() => {
@@ -100,8 +109,8 @@ export function Simulador({
       fotoRef.current = img;
       setOriginal(aDataUrl(reducir(img)));
       setGrado(null);
-      setResultado(null);
-      setEntregas([]);
+      setOpciones([]);
+      setElegida(0);
       setEstado("listo");
     } catch {
       setError("No fue posible abrir la fotografía.");
@@ -114,6 +123,7 @@ export function Simulador({
   const generar = useCallback(async () => {
     const img = fotoRef.current;
     if (!original || !img || !grado) return;
+    const hayPrevia = opciones.length > 0;
     setEstado("generando");
     setError(null);
     try {
@@ -149,26 +159,22 @@ export function Simulador({
       const compuesta = await componer(img, generada);
       if (!compuesta) throw new Error("No se pudo ajustar el resultado sobre la foto original.");
 
-      finalRef.current = { simulacion: compuesta, actual: img };
       const pieza = aDataUrl(soloSimulacion(compuesta), 0.85);
       const comparativa = aDataUrl(actualYSimulacion(img, compuesta), 0.85);
-      setResultado(compuesta.toDataURL("image/jpeg", 0.92));
-      setEntregas([
-        {
-          clave: "simulacion",
-          titulo: "Simulación",
-          pie: "La imagen del resultado estimado",
-          dataUrl: pieza,
-        },
-        {
-          clave: "comparativa",
-          titulo: "Comparativa",
-          pie: "Estado actual y simulación, lado a lado",
-          dataUrl: comparativa,
-        },
-      ]);
-      setSimulacionId(data.id ?? null);
-      setEnlace(data.token ? `${location.origin}/s/${data.token}` : null);
+      const nueva: Opcion = {
+        id: data.id ?? null,
+        enlace: data.token ? `${location.origin}/s/${data.token}` : null,
+        resultado: compuesta.toDataURL("image/jpeg", 0.92),
+        final: { simulacion: compuesta, actual: img },
+        entregas: [
+          { clave: "simulacion", titulo: "Simulación", pie: "La imagen del resultado estimado", dataUrl: pieza },
+          { clave: "comparativa", titulo: "Comparativa", pie: "Estado actual y simulación, lado a lado", dataUrl: comparativa },
+        ],
+      };
+      setOpciones((prev) => [...prev, nueva]);
+      setElegida(opciones.length);
+      setYaCopio(false);
+      setVista(0);
       setConsumo(data.usadas ?? consumo + 1);
       setEstado("hecho");
 
@@ -184,9 +190,15 @@ export function Simulador({
       }).catch(() => {});
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo generar la simulación.");
-      setEstado("error");
+      // Si falla la segunda, la primera sigue ahí y se puede mandar.
+      setEstado(hayPrevia ? "hecho" : "error");
     }
-  }, [original, grado, ejecutivoId, correo, vambe, consumo]);
+  }, [original, grado, ejecutivoId, correo, vambe, consumo, opciones.length]);
+
+  const op = opciones[elegida];
+  const resultado = op?.resultado ?? null;
+  const enlace = op?.enlace ?? null;
+  const simulacionId = op?.id ?? null;
 
   const copiarEnlace = async () => {
     if (!enlace) return;
@@ -206,27 +218,24 @@ export function Simulador({
   const reiniciar = () => {
     setEstado("vacio");
     setOriginal(null);
-    setResultado(null);
-    setEntregas([]);
+    setOpciones([]);
+    setElegida(0);
     setError(null);
     setGrado(null);
     setEjecutivoId("");
     setCorreo("");
     setVambe("");
-    setSimulacionId(null);
-    setEnlace(null);
     setFolioCopiado(false);
     setRepeticiones(0);
     setEditando(null);
     setVista(0);
     setYaCopio(false);
-    finalRef.current = null;
     fotoRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
   };
 
   const bajar = (clave: string) => {
-    const f = finalRef.current;
+    const f = op?.final;
     if (!f) return;
     const base = correo.trim().split("@")[0] || "paciente";
     if (clave === "simulacion") descargar(soloSimulacion(f.simulacion), `${base}-simulacion.jpg`);
@@ -251,6 +260,8 @@ export function Simulador({
   const tituloGrado = GRADOS.find((g) => g.valor === grado)?.titulo;
 
   const abrirSelector = () => inputRef.current?.click();
+  // Con dos opciones, el primer paso del resultado es elegir cuál mandar.
+  const base = opciones.length > 1 ? 1 : 0;
 
   // Al cambiar de paso, la pantalla va sola al que toca: en el celular queda debajo de
   // la foto, y al terminar de generar el enlace quedaba fuera de vista.
@@ -360,7 +371,44 @@ export function Simulador({
 
           {estado === "hecho" ? (
             <>
-              <Paso n={1} total={3} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copie el enlace y mándelo al paciente por WhatsApp">
+              {opciones.length > 1 && (
+                <Paso n={1} total={4} estado="listo-abierto" titulo="Elija la opción que se ve mejor">
+                  <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Opción a mandar">
+                    {opciones.map((o, i) => {
+                      const puesta = i === elegida;
+                      return (
+                        <button
+                          key={o.id ?? i}
+                          type="button"
+                          role="radio"
+                          aria-checked={puesta}
+                          onClick={() => {
+                            setElegida(i);
+                            setYaCopio(false);
+                            setVista(0);
+                          }}
+                          className={`overflow-hidden rounded-[var(--crm-r-md)] border-[3px] text-left ${
+                            puesta ? "border-[var(--crm-accent)]" : "border-[var(--crm-line-strong)] hover:border-[var(--crm-accent)]"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={o.resultado} alt={`Opción ${i + 1}`} className="aspect-[4/5] w-full bg-[var(--crm-surface-3)] object-contain" />
+                          <span
+                            className={`flex min-h-11 items-center justify-center gap-1.5 text-[16px] font-medium ${
+                              puesta ? "bg-[var(--crm-accent)] text-[var(--crm-on-accent)]" : "bg-[var(--crm-surface)] text-[var(--crm-ink)]"
+                            }`}
+                          >
+                            {puesta && <Check className="size-4" />} Opción {i + 1}
+                            {puesta ? " · elegida" : ""}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Paso>
+              )}
+
+              <Paso n={base + 1} total={base + 3} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copie el enlace y mándelo al paciente por WhatsApp">
                 {enlace && (
                   <>
                     <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-xl w-full">
@@ -376,13 +424,13 @@ export function Simulador({
                 )}
               </Paso>
 
-              <Paso n={2} total={3} estado="abierto" titulo="Califique cómo quedó (opcional)">
+              <Paso n={base + 2} total={base + 3} estado="abierto" titulo="Califique cómo quedó (opcional)">
                 {simulacionId && (
-                  <Calificar grande valor={null} etiqueta="" onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
+                  <Calificar key={simulacionId} grande valor={null} etiqueta="" onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
                 )}
               </Paso>
 
-              <Paso n={3} total={3} estado={yaCopio ? "actual" : "abierto"} titulo="Para otro paciente, empiece de nuevo">
+              <Paso n={base + 3} total={base + 3} estado={yaCopio ? "actual" : "abierto"} titulo="Para otro paciente, empiece de nuevo">
                 <button onClick={reiniciar} className="crm-btn crm-btn-secondary crm-btn-lg w-full">
                   Hacer otra simulación
                 </button>
@@ -396,7 +444,7 @@ export function Simulador({
                   }}
                   className="mx-auto flex min-h-11 items-center gap-2 text-[15px] text-[var(--crm-ink-mute)] underline underline-offset-4"
                 >
-                  <RotateCcw className="size-4" /> No quedó bien. Vuelva a generar
+                  <RotateCcw className="size-4" /> No quedó bien. Generar otra opción
                 </button>
               )}
 
@@ -418,7 +466,7 @@ export function Simulador({
                       </div>
                     </div>
                   )}
-                  {entregas.length > 0 && <Entregas entregas={entregas} onDescargar={bajar} />}
+                  {op && <Entregas entregas={op.entregas} onDescargar={bajar} />}
                 </div>
               </details>
             </>
