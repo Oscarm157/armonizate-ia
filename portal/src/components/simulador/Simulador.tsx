@@ -14,6 +14,7 @@ import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 import { BotonesVista, Comparar } from "./Comparar";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
+import { DibujoGrado } from "./DibujoGrado";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 
 type Estado = "vacio" | "listo" | "generando" | "hecho" | "error";
@@ -465,15 +466,20 @@ export function Simulador({
                           setEditando(null);
                         }}
                         disabled={ocupado}
-                        className={`block w-full rounded-[var(--crm-r-md)] border-2 px-4 py-3 text-left transition-colors ${
+                        className={`block w-full rounded-[var(--crm-r-md)] border-2 px-3 py-3 text-left transition-colors ${
                           puesto
                             ? "border-[var(--crm-accent)] bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
                             : "border-[var(--crm-line-strong)] bg-[var(--crm-surface)] text-[var(--crm-ink)] hover:border-[var(--crm-accent)]"
                         }`}
                       >
-                        <span className="block text-[17px] font-medium">{g.titulo}</span>
-                        <span className={`mt-0.5 block text-[15px] ${puesto ? "text-white/85" : "text-[var(--crm-ink-mute)]"}`}>
-                          {g.pie}
+                        <span className="flex items-center gap-3">
+                          <DibujoGrado grado={g.valor} className="size-16 shrink-0 rounded-[10px] bg-[var(--crm-surface)] text-[var(--crm-ink)]" />
+                          <span>
+                            <span className="block text-[17px] font-medium">{g.titulo}</span>
+                            <span className={`mt-0.5 block text-[15px] ${puesto ? "text-white/85" : "text-[var(--crm-ink-mute)]"}`}>
+                              {g.pie}
+                            </span>
+                          </span>
                         </span>
                       </button>
                     );
