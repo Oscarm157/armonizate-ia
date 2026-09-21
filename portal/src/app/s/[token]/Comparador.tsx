@@ -20,7 +20,7 @@ export function Comparador({ token }: { token: string }) {
           simulacion={`/s/${token}/simulacion`}
           posicion={vista}
           onPosicion={setVista}
-          className="aspect-[4/5] w-full sm:aspect-[3/4]"
+          className="aspect-[4/5] w-full"
         />
       </figure>
       <div className="mt-4">

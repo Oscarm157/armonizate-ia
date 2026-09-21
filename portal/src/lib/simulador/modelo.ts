@@ -13,8 +13,12 @@ export const MODELO = "google/nano-banana-2";
 /**
  * La oreja se mueve solo hacia el cráneo. No dice nada de conservar su tamaño ni su
  * forma a propósito: pedir eso frena la corrección hasta dejarla en nada.
+ *
+ * La altura sí se fija, con dos puntos que el modelo puede comprobar (borde de arriba y
+ * lóbulo): en producción salían orejas que subían o bajaban, y eso el procedimiento no
+ * lo hace nunca. Probado el 2026-09-21 en 092, 043, 063 y 010 sin frenar la corrección.
  */
-const EJE = `La oreja se mueve solo hacia el cráneo, nunca hacia arriba ni hacia abajo, y no aparece ninguna oreja donde el pelo la tapaba.`;
+const EJE = `La oreja se mueve solo hacia el cráneo, hacia atrás. Su altura no cambia: el borde de arriba de la oreja queda exactamente a la misma altura que en la original, y el lóbulo también. No subas ni bajes la oreja. No aparece ninguna oreja donde el pelo la tapaba.`;
 
 /**
  * Lo que no cambia entre grados: es lo que impide que el modelo aproveche el viaje para
@@ -47,11 +51,11 @@ export const PROMPTS: Record<Grado, string> = {
 
   medio: `Acerca las orejas de esta persona a la cabeza con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe reducirse de forma notable: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos un tercio. El contorno de la cabeza queda casi como una curva continua de la sien a la mandíbula, con el borde de la oreja asomando apenas. Si la oreja sigue tan abierta como en el original, está mal: métela más. ${EJE} ${COLA}`,
 
-  // Casos leves: la meta es que la oreja deje de verse de frente, no solo que quede
-  // plana. Probado el 2026-09-21 contra los casos leves apartados (043, 054, 092): el
-  // texto anterior ("pega las orejas... la oreja queda plana") las dejaba asomando casi
-  // igual que en la original; este las esconde detrás del contorno.
-  bajo: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: en esta vista frontal no se ve ninguna oreja; quedan escondidas detrás del contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho lo marca el cráneo, nunca las orejas. El contorno de la cabeza es una curva continua y limpia de la sien a la mandíbula. Si al terminar se ve cualquier parte de una oreja por fuera de esa curva, está mal: escóndela más, hasta que no se vea nada. ${EJE} ${COLA}`,
+  // Casos leves: la meta es que la oreja apenas asome, un borde delgado pegado al
+  // cráneo. Una primera versión pedía que no se viera nada y dejaba la cabeza como
+  // recortada a los lados; esta tiene condición de fallo en las dos direcciones.
+  // Probado el 2026-09-21 en 092 (dos corridas, salen parecidas) y 043.
+  bajo: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: de frente, las orejas quedan pegadas al cráneo y apenas asoman: solo se ve un borde delgado de cada oreja junto al contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho lo marca el cráneo más ese borde delgado de la oreja. La cabeza conserva su forma y su ancho natural: no la recortes, no la estreches, no borres las orejas. Si la oreja desapareció por completo o la cabeza se ve recortada a los lados, está mal: es demasiada corrección. Si la oreja todavía sale claramente del contorno, también está mal: pégala más. ${EJE} ${COLA}`,
 };
 
 type Prediccion = {

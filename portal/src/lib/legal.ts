@@ -12,7 +12,8 @@ export const LEGAL_CUERPO =
   "como orientación de cómo podría verse el procedimiento. El resultado real depende de " +
   "la anatomía de cada persona y puede variar. La valoración la realiza el médico.";
 
-/** Versión de una línea, para el pie de las imágenes, donde no cabe el texto completo. */
-export const LEGAL_IMAGEN_1 = "SIMULACIÓN, NO ES UNA PROMESA DE RESULTADO";
-export const LEGAL_IMAGEN_2 =
-  "Imagen generada con inteligencia artificial · El resultado real puede variar · Valoración con el médico";
+/** El aviso impreso en las imágenes que se descargan y se reenvían (texto de la clínica). */
+export const LEGAL_IMAGEN =
+  "La imagen fue generada con inteligencia artificial a partir de su fotografía y sirve " +
+  "como orientación de cómo podría verse el procedimiento. El resultado real depende de " +
+  "la anatomía de cada persona y puede variar.";

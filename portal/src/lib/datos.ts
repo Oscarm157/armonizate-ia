@@ -40,6 +40,7 @@ export type ProspectoConSimulaciones = {
   correo: string;
   vambe: string | null;
   asesor: string;
+  ejecutivoId: string | null;
   resultado: Resultado;
   sede: Sede | null;
   simulaciones: Simulacion[];
@@ -85,6 +86,7 @@ export async function historial({
       correo: s.prospectoCorreo,
       vambe: p?.vambe ?? s.prospectoVambe ?? null,
       asesor: (s.ejecutivoId && nombres.get(s.ejecutivoId)) || SIN_EJECUTIVO,
+      ejecutivoId: s.ejecutivoId,
       resultado: p?.resultado ?? "pendiente",
       sede: p?.sede ?? s.sede ?? null,
       simulaciones: [s],

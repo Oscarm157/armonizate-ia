@@ -6,13 +6,15 @@ import { Modal } from "@/components/crm/Modal";
 import { fmtDate } from "@/lib/crm-format";
 import { Calificar } from "@/components/simulador/Calificar";
 import type { ProspectoConSimulaciones } from "@/lib/datos";
+import { colorEjecutivo } from "@/lib/ejecutivos";
+import { GRADOS } from "@/lib/simulador/grado";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 import { marcarResultado, reactivarEnlace } from "./acciones";
 
 const ETIQUETA = {
-  pendiente: { texto: "sin registrar", clase: "text-[var(--crm-ink-mute)]" },
-  ganado: { texto: "vendido", clase: "text-[var(--crm-accent)]" },
-  perdido: { texto: "no vendido", clase: "text-[var(--crm-danger)]" },
+  pendiente: { texto: "Sin registrar", clase: "text-[var(--crm-ink-mute)]" },
+  ganado: { texto: "Ticket ganado", clase: "text-[var(--crm-accent)]" },
+  perdido: { texto: "Ticket perdido", clase: "text-[var(--crm-danger)]" },
 } as const;
 
 export function Historial({ prospectos }: { prospectos: ProspectoConSimulaciones[] }) {
@@ -62,6 +64,8 @@ function Tarjeta({
   const [folioCopiado, setFolioCopiado] = useState(false);
   const ultima = prospecto.simulaciones[0];
   const et = ETIQUETA[resultado];
+  const color = colorEjecutivo(prospecto.ejecutivoId);
+  const grado = GRADOS.find((g) => g.valor === ultima.grado)?.titulo.toLowerCase();
   const vigente = !!ultima.expiraEn && new Date(ultima.expiraEn) > new Date();
 
   const marcar = (valor: "ganado" | "perdido") => {
@@ -88,10 +92,19 @@ function Tarjeta({
 
   return (
     <li className="overflow-hidden rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)]">
-      <div className="px-5 pt-4 pb-3">
+      {/* Franja con el color del ejecutivo: se distingue de quién es cada caso sin leer. */}
+      <div className="flex items-center justify-between gap-3 px-5 py-2.5" style={{ background: color.fondo, color: color.texto }}>
+        <span className="truncate text-[16px] font-semibold">{prospecto.asesor}</span>
+        {grado && (
+          <span className="shrink-0 rounded-md bg-white/70 px-2.5 py-0.5 text-[14px] font-semibold">
+            Grado {grado}
+          </span>
+        )}
+      </div>
+      <div className="px-5 pt-3 pb-3">
         <p className="truncate text-[17px] font-medium text-[var(--crm-ink)]">{prospecto.correo}</p>
         <p className="mt-0.5 text-[15px] text-[var(--crm-ink-mute)]">
-          <span className="crm-num">{fmtDate(ultima.creadoEn)}</span> · {prospecto.asesor}
+          <span className="crm-num">{fmtDate(ultima.creadoEn)}</span>
         </p>
       </div>
 
@@ -160,8 +173,8 @@ function Tarjeta({
 
         <div>
           <p className="mb-2 text-[16px] font-medium text-[var(--crm-ink)]">
-            ¿Se hizo la venta?{" "}
-            <span className={`text-[15px] font-normal ${et.clase}`}>({et.texto})</span>
+            Estado del ticket:{" "}
+            <span className={`font-semibold ${et.clase}`}>{et.texto}</span>
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -170,7 +183,7 @@ function Tarjeta({
               aria-pressed={resultado === "ganado"}
               className={`crm-btn crm-btn-lg ${resultado === "ganado" ? "crm-btn-primary" : "crm-btn-secondary"}`}
             >
-              <Check className="size-5" /> Sí, se vendió
+              <Check className="size-5" /> Ticket ganado
             </button>
             <button
               onClick={() => marcar("perdido")}
@@ -183,7 +196,7 @@ function Tarjeta({
                   : undefined
               }
             >
-              <X className="size-5" /> No se vendió
+              <X className="size-5" /> Ticket perdido
             </button>
           </div>
         </div>
