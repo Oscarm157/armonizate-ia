@@ -24,13 +24,21 @@ export function Comparar({
   actual,
   simulacion,
   className = "",
+  posicion: controlada,
+  onPosicion,
 }: {
   actual: string;
   simulacion: string;
   className?: string;
+  // Opcional: quien lo usa puede mover el corte desde fuera, con botones grandes
+  // "Ver foto actual" / "Ver simulación" para quien no domina el gesto.
+  posicion?: number;
+  onPosicion?: (n: number) => void;
 }) {
   // 100 = solo la fotografía actual. 0 = solo la simulación.
-  const [posicion, setPosicion] = useState(50);
+  const [interna, setInterna] = useState(50);
+  const posicion = controlada ?? interna;
+  const setPosicion = onPosicion ?? setInterna;
   const [pulsando, setPulsando] = useState(false);
   const cajaRef = useRef<HTMLDivElement>(null);
   const arrastrando = useRef(false);
@@ -39,13 +47,13 @@ export function Comparar({
     const caja = cajaRef.current?.getBoundingClientRect();
     if (!caja) return;
     setPosicion(Math.min(100, Math.max(0, ((clienteX - caja.left) / caja.width) * 100)));
-  }, []);
+  }, [setPosicion]);
 
   const soltar = useCallback(() => {
     if (!arrastrando.current) setPosicion(100);
     arrastrando.current = false;
     setPulsando(false);
-  }, []);
+  }, [setPosicion]);
 
   return (
     <div

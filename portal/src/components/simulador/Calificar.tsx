@@ -14,10 +14,13 @@ export function Calificar({
   valor,
   onCalificar,
   etiqueta = "Calidad de esta simulación",
+  grande = false,
 }: {
   valor: number | null;
   onCalificar: (n: number) => Promise<{ error?: string } | void>;
   etiqueta?: string;
+  // Estrellas grandes para el flujo de ejecutivos: blanco fácil de tocar.
+  grande?: boolean;
 }) {
   const [actual, setActual] = useState(valor);
   const [sobre, setSobre] = useState<number | null>(null);
@@ -34,8 +37,8 @@ export function Calificar({
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-      <span className="text-[13px] text-[var(--crm-ink-mute)]">{etiqueta}</span>
-      <span className="flex items-center gap-0.5" role="group" aria-label={etiqueta}>
+      {etiqueta && <span className="text-[13px] text-[var(--crm-ink-mute)]">{etiqueta}</span>}
+      <span className="flex items-center gap-0.5" role="group" aria-label={etiqueta || "Calificación"}>
         {[1, 2, 3, 4, 5].map((n) => {
           const encendida = (sobre ?? actual ?? 0) >= n;
           return (
@@ -48,10 +51,10 @@ export function Calificar({
               onMouseLeave={() => setSobre(null)}
               aria-label={`${n} de 5`}
               aria-pressed={actual === n}
-              className="p-0.5 transition-transform hover:scale-110 disabled:pointer-events-none"
+              className={`${grande ? "p-1.5" : "p-0.5"} transition-transform hover:scale-110 disabled:pointer-events-none`}
             >
               <Star
-                className={`size-5 ${encendida ? "text-[var(--crm-accent)]" : "text-[var(--crm-line-strong)]"}`}
+                className={`${grande ? "size-9" : "size-5"} ${encendida ? "text-[var(--crm-accent)]" : "text-[var(--crm-line-strong)]"}`}
                 fill={encendida ? "currentColor" : "none"}
                 strokeWidth={1.75}
               />
