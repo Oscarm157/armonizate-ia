@@ -38,6 +38,16 @@ const GUIA = [
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Recorte cuadrado de la cabeza: el modelo necesita píxeles de oreja para trabajar. */
+function recorteCabeza(img: HTMLImageElement, pts: Parameters<typeof cajaCabeza>[0], calidad: number) {
+  const caja = cajaCabeza(pts, img.naturalWidth, img.naturalHeight);
+  const c = document.createElement("canvas");
+  c.width = 1024;
+  c.height = 1024;
+  c.getContext("2d")!.drawImage(img, caja.x, caja.y, caja.lado, caja.lado, 0, 0, 1024, 1024);
+  return c.toDataURL("image/jpeg", calidad);
+}
+
 export function Simulador({
   usadas,
   tope,
@@ -58,6 +68,13 @@ export function Simulador({
   const [opciones, setOpciones] = useState<Opcion[]>([]);
   const [elegida, setElegida] = useState(0);
   const [grado, setGrado] = useState<Grado | null>(null);
+  // Si el grado lo puso el sistema y no el ejecutivo: se le dice para que lo revise.
+  const [sugerido, setSugerido] = useState(false);
+  const fotoTurno = useRef(0);
+  const gradoRef = useRef(grado);
+  useEffect(() => {
+    gradoRef.current = grado;
+  }, [grado]);
   // Se elige en cada simulación, a propósito sin recordar el anterior: el acceso es
   // compartido y el mismo equipo lo usan varias personas.
   const [ejecutivoId, setEjecutivoId] = useState("");
@@ -109,9 +126,26 @@ export function Simulador({
       fotoRef.current = img;
       setOriginal(aDataUrl(reducir(img)));
       setGrado(null);
+      setSugerido(false);
       setOpciones([]);
       setElegida(0);
       setEstado("listo");
+
+      // El grado se sugiere solo; el ejecutivo lo puede cambiar. Si la respuesta llega
+      // cuando ya eligió uno, o ya cambió de foto, no se toca nada.
+      const turno = ++fotoTurno.current;
+      fetch("/api/grado", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cabeza: recorteCabeza(img, pts, 0.85) }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((d: { grado: Grado | null } | null) => {
+          if (!d?.grado || turno !== fotoTurno.current || gradoRef.current) return;
+          setGrado(d.grado);
+          setSugerido(true);
+        })
+        .catch(() => {});
     } catch {
       setError("No fue posible abrir la fotografía.");
       setEstado("error");
@@ -130,20 +164,14 @@ export function Simulador({
       const pts = await detectar(img);
       if (!pts) throw new Error("No se detecta un rostro de frente en la fotografía.");
 
-      // Recorte de la cabeza: el modelo necesita píxeles de oreja para trabajar.
-      const caja = cajaCabeza(pts, img.naturalWidth, img.naturalHeight);
-      const c = document.createElement("canvas");
-      c.width = 1024;
-      c.height = 1024;
-      c.getContext("2d")!.drawImage(img, caja.x, caja.y, caja.lado, caja.lado, 0, 0, 1024, 1024);
-
       const res = await fetch("/api/simular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cabeza: c.toDataURL("image/jpeg", 0.95),
+          cabeza: recorteCabeza(img, pts, 0.95),
           original,
           grado,
+          fuerte: hayPrevia,
           ejecutivoId,
           correo: correo.trim(),
           vambe: vambe.trim(),
@@ -222,6 +250,8 @@ export function Simulador({
     setElegida(0);
     setError(null);
     setGrado(null);
+    setSugerido(false);
+    fotoTurno.current++;
     setEjecutivoId("");
     setCorreo("");
     setVambe("");
@@ -497,7 +527,7 @@ export function Simulador({
                 n={2}
                 estado={actual === 2 ? "actual" : grado ? "listo" : "falta"}
                 titulo="Elija qué tan separadas están las orejas"
-                resumen={tituloGrado}
+                resumen={tituloGrado && (sugerido ? `${tituloGrado} · sugerido por el sistema, revíselo` : tituloGrado)}
                 onCambiar={original && !ocupado ? () => setEditando(2) : undefined}
               >
                 <div className="space-y-2" role="radiogroup" aria-label="Grado del caso">
@@ -511,6 +541,7 @@ export function Simulador({
                         aria-checked={puesto}
                         onClick={() => {
                           setGrado(g.valor);
+                          setSugerido(false);
                           setEditando(null);
                         }}
                         disabled={ocupado}

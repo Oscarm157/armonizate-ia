@@ -2,8 +2,7 @@
 // (scripts/10_simular.py del repo armonizate-simulador). No se improvisan aquí.
 
 import type { Grado } from "./grado";
-
-const API = "https://api.replicate.com/v1";
+import { correr } from "./replicate";
 
 // Se compararon nano-banana pro, 2 y 2-lite con el mismo prompt sobre los mismos
 // casos: el 2 deja el contorno de la cabeza más limpio, es el que menos toca el
@@ -58,11 +57,15 @@ export const PROMPTS: Record<Grado, string> = {
   bajo: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: de frente, las orejas quedan pegadas al cráneo y apenas asoman: solo se ve un borde delgado de cada oreja junto al contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho lo marca el cráneo más ese borde delgado de la oreja. La cabeza conserva su forma y su ancho natural: no la recortes, no la estreches, no borres las orejas. Si la oreja desapareció por completo o la cabeza se ve recortada a los lados, está mal: es demasiada corrección. Si la oreja todavía sale claramente del contorno, también está mal: pégala más. ${EJE} ${COLA}`,
 };
 
-type Prediccion = {
-  id: string;
-  status: string;
-  output?: string | string[];
-  error?: unknown;
+/**
+ * La versión con más empuje de cada grado: misma meta, un escalón más de corrección.
+ */
+const MAS_FUERZA = `Esta es una segunda versión: la anterior se quedó corta. Aplica la corrección con más fuerza que la primera vez, llevando la oreja más cerca del cráneo dentro de lo que pide el resultado.`;
+
+export const PROMPTS_FUERTE: Record<Grado, string> = {
+  bajo: `${MAS_FUERZA} ${PROMPTS.bajo}`,
+  medio: `${MAS_FUERZA} ${PROMPTS.medio}`,
+  alto: `${MAS_FUERZA} ${PROMPTS.alto}`,
 };
 
 /**
@@ -70,49 +73,39 @@ type Prediccion = {
  *
  * A 1K, que es el default del modelo, la salida se ve borrosa al componerla sobre la
  * foto original, que suele ser más grande. Por eso 2K.
+ *
+ * `fuerte` usa la versión con más empuje del mismo grado: es la que corre cuando el
+ * ejecutivo pide otra opción porque la primera se quedó corta. Repetir el mismo prompt
+ * casi nunca mejoraba.
  */
 export async function generar(
   imagenDataUrl: string,
   grado: Grado,
-  token: string
+  token: string,
+  fuerte = false
 ): Promise<{ base64: string } | { error: string }> {
-  const crear = await fetch(`${API}/models/${MODELO}/predictions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      input: {
-        prompt: PROMPTS[grado],
-        image_input: [imagenDataUrl],
-        output_format: "jpg",
-        aspect_ratio: "match_input_image",
-        resolution: "2K",
-      },
-    }),
-  });
+  const r = await correr(
+    MODELO,
+    {
+      prompt: (fuerte ? PROMPTS_FUERTE : PROMPTS)[grado],
+      image_input: [imagenDataUrl],
+      output_format: "jpg",
+      aspect_ratio: "match_input_image",
+      resolution: "2K",
+    },
+    token,
+    "simular"
+  );
+  if ("error" in r)
+    return {
+      error:
+        r.error === "http"
+          ? "El servicio de imagen no respondió. Intente de nuevo."
+          : "No se pudo generar la simulación. Pruebe con otra foto de frente.",
+    };
 
-  if (!crear.ok) {
-    const detalle = (await crear.text()).slice(0, 300);
-    console.error("[simular] Replicate HTTP", crear.status, detalle);
-    return { error: "El servicio de imagen no respondió. Intenta de nuevo." };
-  }
-
-  let pred: Prediccion = await crear.json();
-  for (let i = 0; i < 60 && (pred.status === "starting" || pred.status === "processing"); i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const poll = await fetch(`${API}/predictions/${pred.id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!poll.ok) break;
-    pred = await poll.json();
-  }
-
-  if (pred.status !== "succeeded") {
-    console.error("[simular] predicción", pred.status, String(pred.error).slice(0, 200));
-    return { error: "No se pudo generar la simulación. Prueba con otra foto de frente." };
-  }
-
-  const url = Array.isArray(pred.output) ? pred.output[0] : pred.output;
-  if (!url) return { error: "El servicio devolvió una respuesta vacía." };
+  const url = Array.isArray(r.output) ? r.output[0] : r.output;
+  if (typeof url !== "string") return { error: "El servicio devolvió una respuesta vacía." };
 
   const img = await fetch(url);
   if (!img.ok) return { error: "No se pudo descargar la imagen generada." };
