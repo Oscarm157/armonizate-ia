@@ -13,9 +13,7 @@ export default async function SimuladorPage() {
   ]);
 
   return (
-    // 85%: dentro de ArmoAdmin el marco es chico y así entra más flujo sin bajar. La
-    // escala se aplica a toda la pantalla para que nada quede desproporcionado.
-    <div className="crm-fade mx-auto max-w-[1180px] [zoom:0.85]">
+    <div className="crm-fade mx-auto max-w-[1180px]">
       {/* Encabezado compacto: dentro del panel de la clínica el marco mide ~660 px de
           alto y el espacio se lo lleva el flujo, no el título. El consumo no se enseña
           aquí: al terminar se le dice al ejecutivo cuántas lleva él. */}
