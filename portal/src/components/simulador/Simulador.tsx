@@ -331,17 +331,6 @@ export function Simulador({
     else descargar(actualYSimulacion(f.actual, f.simulacion), `${base}-comparativa.jpg`);
   };
 
-  // Lo que falta, en palabras. Se enseña junto al botón de generar para que nadie
-  // tenga que adivinar por qué no se puede todavía.
-  const faltantes = [
-    !original && "la foto del paciente",
-    !grado && (midiendo ? "esperar la medición del grado" : sugerencia ? "confirmar el grado" : "el grado del caso"),
-    !ejecutivoId && "el nombre del ejecutivo",
-    !sede && "la sucursal del paciente",
-    !correoOk && "el correo del paciente",
-    !vambeOk && "el enlace de Vambe",
-  ].filter(Boolean) as string[];
-
   // El paso en curso: el primero sin terminar, salvo que el ejecutivo haya pedido
   // cambiar uno ya hecho.
   const siguiente = !original ? 1 : !grado ? 2 : !datosListos ? 3 : 4;
@@ -826,11 +815,6 @@ export function Simulador({
                   <Sparkles className={`size-5 ${ocupado ? "animate-pulse" : ""}`} />
                   {ocupado ? "Generando…" : "Generar simulación"}
                 </button>
-                {faltantes.length > 0 && !ocupado && (
-                  <p className="mt-3 text-[15px] text-[var(--crm-ink)]">
-                    <span className="font-medium">Falta:</span> {faltantes.join(", ")}.
-                  </p>
-                )}
               </Paso>
             </>
           )}
