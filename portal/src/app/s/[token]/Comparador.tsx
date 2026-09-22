@@ -27,15 +27,18 @@ export function Comparador({ token }: { token: string }) {
         />
       </figure>
       {/* El texto dice lo que se va a ver al tocar, no lo que se ve ahora. */}
-      <button
-        type="button"
-        aria-pressed={enActual}
-        onClick={() => setVista(enActual ? 0 : 100)}
-        className="crm-btn crm-btn-primary crm-btn-lg mx-auto mt-4 flex w-full max-w-[min(100%,calc(50dvh*0.8))]"
-      >
-        <RefreshCw className="size-5" />
-        {enActual ? "Ver simulación" : "Ver foto actual"}
-      </button>
+      {/* Centrado con un contenedor: .crm-btn es inline-flex y no se centra con mx-auto. */}
+      <div className="mt-4 flex justify-center">
+        <button
+          type="button"
+          aria-pressed={enActual}
+          onClick={() => setVista(enActual ? 0 : 100)}
+          className="crm-btn crm-btn-primary crm-btn-lg w-full max-w-[min(100%,calc(50dvh*0.8))]"
+        >
+          <RefreshCw className="size-5" />
+          {enActual ? "Ver simulación" : "Ver foto actual"}
+        </button>
+      </div>
     </div>
   );
 }
