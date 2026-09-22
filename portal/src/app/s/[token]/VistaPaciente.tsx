@@ -20,7 +20,7 @@ type Sim = { id: string; sede: string | null; comparativaPathname: string | null
 /** Lo que ve el paciente. Separado de la página para poder revisarlo sin base de datos. */
 export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }) {
   const whatsapp = sim
-    ? enlaceWhatsApp(sim.sede, `Hola, vi mi simulación de otomodelación y quiero reservar mi cupo. Folio: ${sim.id.slice(0, 8)}`)
+    ? enlaceWhatsApp(sim.sede, `Hola, vi mi simulación de otomodelación y quiero agendar una cita. Folio: ${sim.id.slice(0, 8)}`)
     : enlaceWhatsApp(null, "Hola, mi enlace de simulación de otomodelación venció. ¿Me lo pueden mandar de nuevo?");
 
   return (
@@ -58,7 +58,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
             <Comparador token={token} />
 
             <div className="mt-6">
-              <BotonReservar href={whatsapp} texto="Reservar mi cupo por WhatsApp" />
+              <BotonReservar href={whatsapp} texto="Agendar cita" />
             </div>
 
             <section className="mt-10">
@@ -95,7 +95,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
             )}
 
             <div className="mt-10">
-              <BotonReservar href={whatsapp} texto="Reservar mi cupo por WhatsApp" />
+              <BotonReservar href={whatsapp} texto="Agendar cita" />
             </div>
 
             <div className="mt-10 rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-6 py-6">
