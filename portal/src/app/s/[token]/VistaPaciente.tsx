@@ -5,7 +5,6 @@ import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 import { enlaceWhatsApp, nombreSede } from "@/lib/sedes";
 import { Comparador } from "./Comparador";
 import { BotonReservar } from "./BotonReservar";
-import { BarraReservar } from "./BarraReservar";
 
 // Datos de clinicaarmonizate.mx (home y /otomodelacion, revisados el 2026-09-21),
 // acortados para leerse de un vistazo. No se agrega nada que el sitio no diga.
@@ -27,7 +26,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
     : enlaceWhatsApp(null, "Hola, mi enlace de simulación de otomodelación venció. ¿Me lo pueden mandar de nuevo?");
 
   return (
-    <main className="crm-root min-h-[100dvh] bg-[var(--crm-bg)] pb-28 sm:pb-12">
+    <main className="crm-root min-h-[100dvh] bg-[var(--crm-bg)] pb-12">
       {/* Franja de marca: el paciente tiene que reconocer a la clínica antes que nada. */}
       <header className="bg-[var(--crm-accent)] px-5 py-5">
         <Image
@@ -60,7 +59,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
 
             <Comparador token={token} />
 
-            <div id="reservar-principal" className="mt-6">
+            <div className="mt-6">
               <BotonReservar href={whatsapp} texto="Reservar mi cupo por WhatsApp" />
               <p className="mt-3 text-center text-[15px] text-[var(--crm-ink-mute)]">
                 Te atiende la sucursal {nombreSede(sim.sede)}
@@ -113,7 +112,6 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
               Este enlace estará disponible por {HORAS_VIGENCIA} horas. clinicaarmonizate.mx
             </p>
 
-            <BarraReservar href={whatsapp} texto="Reservar mi cupo por WhatsApp" vigilar="reservar-principal" />
           </>
         )}
       </div>
