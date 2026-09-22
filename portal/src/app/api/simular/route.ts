@@ -31,7 +31,7 @@ const bodySchema = z.object({
   // La segunda opción va con más empuje: repetir el mismo prompt casi nunca mejora.
   fuerte: z.boolean().optional(),
   // Quién generó: el acceso es compartido, así que se elige de la lista al generar.
-  ejecutivoId: z.string().uuid("Elija el ejecutivo."),
+  ejecutivoId: z.string().uuid("Elige el ejecutivo."),
   // La sucursal del paciente: de aquí sale el WhatsApp del botón en su enlace.
   sede: z.enum(CODIGOS_SEDE as [string, ...string[]]),
 });
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     datos = await parseJson(bodySchema, request);
   } catch {
     return NextResponse.json(
-      { error: "Revise la fotografía, el grado, el ejecutivo, la sucursal, el correo y el enlace de Vambe." },
+      { error: "Revisa la fotografía, el grado, el ejecutivo, la sucursal, el correo y el enlace de Vambe." },
       { status: 400 }
     );
   }
@@ -72,13 +72,13 @@ export async function POST(request: Request) {
     .select()
     .from(ejecutivos)
     .where(and(eq(ejecutivos.id, datos.ejecutivoId), eq(ejecutivos.activo, true)));
-  if (!ejecutivo) return NextResponse.json({ error: "Elija un ejecutivo de la lista." }, { status: 400 });
+  if (!ejecutivo) return NextResponse.json({ error: "Elige un ejecutivo de la lista." }, { status: 400 });
 
   // El tope se verifica ANTES de llamar al modelo: pasado el límite no se gasta.
   const usadas = await consumoDelMes();
   if (usadas >= TOPE_MENSUAL) {
     return NextResponse.json(
-      { error: `Alcanzó el límite de ${TOPE_MENSUAL} simulaciones de este mes.`, usadas, tope: TOPE_MENSUAL },
+      { error: `Se alcanzó el límite de ${TOPE_MENSUAL} simulaciones de este mes.`, usadas, tope: TOPE_MENSUAL },
       { status: 429 }
     );
   }

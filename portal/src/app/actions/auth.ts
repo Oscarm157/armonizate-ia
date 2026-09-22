@@ -10,7 +10,7 @@ import { VENTANA_MIN, bloqueada, cuentaDe, registrarFallo, rolDeClave } from "@/
 import { safeParseForm } from "@/lib/validate";
 
 const loginSchema = z.object({
-  clave: z.string().min(1, "Escriba la clave de acceso.").max(200),
+  clave: z.string().min(1, "Escribe la clave de acceso.").max(200),
 });
 
 async function setSessionCookie(userId: string) {
@@ -40,7 +40,7 @@ export async function login(formData: FormData): Promise<{ error: string } | voi
   const ip = h.get("x-real-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "desconocida";
 
   if (await bloqueada(ip))
-    return { error: `Demasiados intentos. Espere ${VENTANA_MIN} minutos y vuelva a intentar.` };
+    return { error: `Demasiados intentos. Espera ${VENTANA_MIN} minutos y vuelve a intentar.` };
 
   const tipo = rolDeClave(parsed.data.clave);
   if (!tipo) {

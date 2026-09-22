@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   try {
     datos = await parseJson(bodySchema, request);
   } catch {
-    return NextResponse.json({ error: "Revise las dos fotografías y el grado." }, { status: 400 });
+    return NextResponse.json({ error: "Revisa las dos fotografías y el grado." }, { status: 400 });
   }
 
   const { REPLICATE_API_TOKEN } = serverEnv();

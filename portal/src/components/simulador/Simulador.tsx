@@ -166,7 +166,7 @@ export function Simulador({
       const img = await cargarImagen(url);
       const pts = await detectar(img);
       if (!pts) {
-        setError("No se detecta un rostro de frente. Solicite otra fotografía, de frente y con el cabello recogido.");
+        setError("No se detecta un rostro de frente. Pide otra fotografía, de frente y con el cabello recogido.");
         setEstado("error");
         return;
       }
@@ -421,7 +421,7 @@ export function Simulador({
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--crm-ink)]/60 px-6 text-center">
                 <Sparkles className="size-8 animate-pulse text-white" />
                 <span className="text-[20px] font-medium text-white">Generando la simulación</span>
-                <span className="text-[16px] text-white/90">Tarda unos 15 segundos. No cierre esta ventana.</span>
+                <span className="text-[16px] text-white/90">Tarda unos 15 segundos. No cierres esta ventana.</span>
               </div>
             )}
           </div>
@@ -462,7 +462,7 @@ export function Simulador({
               )}
 
               {opciones.length > 1 && (
-                <Paso n={1} total={4} estado="listo-abierto" titulo="Elija la opción que se ve mejor">
+                <Paso n={1} total={4} estado="listo-abierto" titulo="Elige la opción que se ve mejor">
                   <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Opción a mandar">
                     {opciones.map((o, i) => {
                       const puesta = i === elegida;
@@ -498,7 +498,7 @@ export function Simulador({
                 </Paso>
               )}
 
-              <Paso n={base + 1} total={base + 3} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copie el enlace y mándelo al paciente por WhatsApp">
+              <Paso n={base + 1} total={base + 3} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copia el enlace y mándaselo al paciente por WhatsApp">
                 {enlace && (
                   <>
                     <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-xl w-full">
@@ -507,7 +507,7 @@ export function Simulador({
                     </button>
                     <p className="mt-3 text-[16px] text-[var(--crm-ink)]">
                       {yaCopio
-                        ? "Listo. Ahora péguelo en la conversación de WhatsApp del paciente."
+                        ? "Listo. Ahora pégalo en la conversación de WhatsApp del paciente."
                         : `El paciente lo abre en su teléfono. Dura ${HORAS_VIGENCIA} horas.`}
                     </p>
                   </>
@@ -518,7 +518,7 @@ export function Simulador({
                 n={base + 2}
                 total={base + 3}
                 estado={calificado ? "listo-abierto" : "actual"}
-                titulo="Califique cómo quedó"
+                titulo="Califica cómo quedó"
               >
                 {simulacionId && (
                   <Calificar
@@ -535,12 +535,12 @@ export function Simulador({
                 )}
                 {!calificado && (
                   <p className="mt-2 text-[15px] text-[var(--crm-ink-mute)]">
-                    Toque las estrellas: de 1 a 5, qué tan bien quedó la simulación.
+                    Toca las estrellas: de 1 a 5, qué tan bien quedó la simulación.
                   </p>
                 )}
               </Paso>
 
-              <Paso n={base + 3} total={base + 3} estado={yaCopio && calificado ? "actual" : "abierto"} titulo="Para otro paciente, empiece de nuevo">
+              <Paso n={base + 3} total={base + 3} estado={yaCopio && calificado ? "actual" : "abierto"} titulo="Para otro paciente, empieza de nuevo">
                 <button
                   onClick={reiniciar}
                   disabled={!calificado}
@@ -549,7 +549,7 @@ export function Simulador({
                   Hacer otra simulación
                 </button>
                 {!calificado && (
-                  <p className="mt-2 text-[15px] text-[var(--crm-ink)]">Falta calificar la simulación del paso {base + 2}.</p>
+                  <p className="mt-2 text-[15px] text-[var(--crm-ink)]">Pendiente: califica la simulación del paso {base + 2}.</p>
                 )}
               </Paso>
 
@@ -592,7 +592,7 @@ export function Simulador({
               <Paso
                 n={1}
                 estado={actual === 1 ? "actual" : original ? "listo" : "falta"}
-                titulo="Suba la foto del paciente"
+                titulo="Sube la foto del paciente"
                 resumen="Foto cargada"
                 onCambiar={ocupado ? undefined : abrirSelector}
               >
@@ -613,7 +613,7 @@ export function Simulador({
               <Paso
                 n={2}
                 estado={actual === 2 ? "actual" : grado ? "listo" : "falta"}
-                titulo="Elija qué tan separadas están las orejas"
+                titulo="Elige qué tan separadas están las orejas"
                 resumen={tituloGrado}
                 onCambiar={original && !ocupado ? () => setEditando(2) : undefined}
               >
@@ -627,7 +627,7 @@ export function Simulador({
                       Midiendo las orejas…
                     </p>
                     <p className="mt-1 pl-9 text-[15px] text-[var(--crm-ink-mute)]">
-                      El sistema calcula el grado. Tarda unos segundos, espere por favor.
+                      El sistema calcula el grado. Tarda unos segundos, espera un momento.
                     </p>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--crm-accent-tint-2)]">
                       <div className="barra-midiendo h-full w-1/3 rounded-full bg-[var(--crm-accent)]" />
@@ -650,11 +650,11 @@ export function Simulador({
                     >
                       <Check className="size-5" /> Confirmar grado {GRADOS.find((g) => g.valor === sugerencia)?.titulo.toLowerCase()}
                     </button>
-                    <p className="mt-2 text-center text-[14px] text-[var(--crm-ink-mute)]">O elija otro grado abajo.</p>
+                    <p className="mt-2 text-center text-[14px] text-[var(--crm-ink-mute)]">O elige otro grado abajo.</p>
                   </div>
                 )}
                 {medicionFallo && !grado && (
-                  <p className="mb-3 text-[15px] text-[var(--crm-ink)]">No se pudo medir. Elija el grado mirando la foto.</p>
+                  <p className="mb-3 text-[15px] text-[var(--crm-ink)]">No se pudo medir. Elige el grado mirando la foto.</p>
                 )}
                 <div
                   className={`space-y-2 transition-opacity ${midiendo ? "pointer-events-none opacity-40" : ""}`}
@@ -711,7 +711,7 @@ export function Simulador({
               <Paso
                 n={3}
                 estado={actual === 3 ? "actual" : datosListos ? "listo-abierto" : "falta"}
-                titulo="Escriba los datos del ejecutivo y del paciente"
+                titulo="Escribe los datos del ejecutivo y del paciente"
               >
                 <div className="space-y-4">
                   <Campo id="ejecutivo" etiqueta="Nombre del ejecutivo">
@@ -729,7 +729,7 @@ export function Simulador({
                       disabled={ocupado}
                     >
                       <option value="" disabled>
-                        Elija el nombre del ejecutivo
+                        Elige el nombre del ejecutivo
                       </option>
                       {ejecutivos.map((e) => (
                         <option key={e.id} value={e.id}>
@@ -741,7 +741,7 @@ export function Simulador({
                   <Campo
                     id="sede"
                     etiqueta="Sucursal del paciente"
-                    ayuda="El paciente podrá escribir al WhatsApp de esta sucursal desde su enlace."
+                    ayuda="El paciente puede escribir al WhatsApp de esta sucursal desde su enlace."
                   >
                     <select
                       id="sede"
@@ -751,7 +751,7 @@ export function Simulador({
                       disabled={ocupado}
                     >
                       <option value="" disabled>
-                        Elija la sucursal
+                        Elige la sucursal
                       </option>
                       {sedesDelEjecutivo.length > 0 && (
                         <optgroup label="Sucursales del ejecutivo">
@@ -774,7 +774,7 @@ export function Simulador({
                   <Campo
                     id="correo"
                     etiqueta="Correo del paciente"
-                    aviso={correo.trim() && !correoOk ? "Revise el correo. Debe verse así: nombre@correo.com" : undefined}
+                    aviso={correo.trim() && !correoOk ? "Revisa el correo. Debe verse así: nombre@correo.com" : undefined}
                   >
                     <input
                       id="correo"
@@ -790,8 +790,8 @@ export function Simulador({
                   <Campo
                     id="vambe"
                     etiqueta="Enlace del paciente en Vambe"
-                    ayuda="Cópielo desde la conversación del paciente en Vambe."
-                    aviso={vambe.trim() && !vambeOk ? "Pegue el enlace completo. Empieza con https://" : undefined}
+                    ayuda="Cópialo desde la conversación del paciente en Vambe."
+                    aviso={vambe.trim() && !vambeOk ? "Pega el enlace completo. Empieza con https://" : undefined}
                   >
                     <input
                       id="vambe"
@@ -806,7 +806,7 @@ export function Simulador({
                 </div>
               </Paso>
 
-              <Paso n={4} estado={actual === 4 ? "actual" : "falta"} titulo="Genere la simulación" siempreAbierto>
+              <Paso n={4} estado={actual === 4 ? "actual" : "falta"} titulo="Genera la simulación" siempreAbierto>
                 <button
                   onClick={generar}
                   disabled={!listoParaGenerar || agotado || ocupado}
@@ -860,7 +860,7 @@ function Paso({
   const esActual = estado === "actual";
   const listo = estado === "listo" || estado === "listo-abierto";
   const abierto = esActual || estado === "abierto" || estado === "listo-abierto" || siempreAbierto;
-  const etiqueta = esActual ? "Ahora" : listo ? "Listo" : estado === "falta" ? "Falta" : null;
+  const etiqueta = esActual ? "Ahora" : listo ? "Listo" : estado === "falta" ? "Pendiente" : null;
 
   return (
     <section

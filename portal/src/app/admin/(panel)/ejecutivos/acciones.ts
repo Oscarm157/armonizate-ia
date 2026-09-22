@@ -9,7 +9,7 @@ import { requireAdmin } from "@/lib/session";
 import { CODIGOS_SEDE, type Sede } from "@/lib/sedes";
 
 const datosSchema = z.object({
-  nombre: z.string().trim().min(2, "Escriba el nombre.").max(80),
+  nombre: z.string().trim().min(2, "Escribe el nombre.").max(80),
   // Una o varias sucursales; vacío = sin sucursal.
   sedes: z.array(z.enum(CODIGOS_SEDE as [Sede, ...Sede[]])).max(CODIGOS_SEDE.length),
 });

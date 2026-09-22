@@ -78,7 +78,7 @@ export function Ejecutivos({ lista }: { lista: Fila[] }) {
 
       {lista.length === 0 ? (
         <p className="py-10 text-center text-[14px] text-[var(--crm-ink-mute)]">
-          Aún no hay ejecutivos. Agregue el primero para que aparezca al generar.
+          Aún no hay ejecutivos. Agrega el primero para que aparezca al generar.
         </p>
       ) : (
         <ul className="crm-mesa divide-y divide-[var(--crm-line)] px-5">
