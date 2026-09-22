@@ -15,5 +15,5 @@ export type Grado = "alto" | "medio" | "bajo";
 export const GRADOS: { valor: Grado; titulo: string; pie: string }[] = [
   { valor: "bajo", titulo: "Leve", pie: "Apenas se separan de la cabeza" },
   { valor: "medio", titulo: "Medio", pie: "Se nota la separación, es el caso más común" },
-  { valor: "alto", titulo: "Grave", pie: "Se ven completas de frente" },
+  { valor: "alto", titulo: "Alto", pie: "Se ven completas de frente" },
 ];
