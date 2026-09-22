@@ -6,13 +6,13 @@ import { Comparar } from "@/components/simulador/Comparar";
 
 /**
  * El comparador que ve el paciente. Solo mira: aquí no hay nada que generar.
- * Abre en la simulación y un solo botón cambia entre las dos fotos: mantener pulsado o
- * arrastrar no es obvio para todos, y dos botones separados se leían como un menú.
+ * Abre partido a la mitad, con el tirador a la vista, y el botón de abajo salta de un
+ * lado al otro para quien no quiera arrastrar.
  */
 export function Comparador({ token }: { token: string }) {
   // 100 = foto actual, 0 = simulación.
-  const [vista, setVista] = useState(0);
-  const enActual = vista === 100;
+  const [vista, setVista] = useState(50);
+  const enActual = vista > 50;
 
   return (
     <div>
