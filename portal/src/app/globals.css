@@ -465,14 +465,15 @@
   justify-content: center;
   gap: 0.6rem;
   width: 100%;
-  min-height: 64px;
+  /* Mismo tamaño que .crm-btn-lg ("Ver foto actual"): los botones de la página del
+     paciente son todos iguales; el verde y la animación son lo que lo distingue. */
+  min-height: 52px;
   padding: 0 1.25rem;
   border-radius: 9999px;
   background: linear-gradient(180deg, #2fe07a 0%, #1ebe5d 100%);
   color: #ffffff;
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.01em;
   box-shadow: 0 10px 30px -8px rgba(30, 190, 93, 0.65), inset 0 -2px 0 rgba(0, 0, 0, 0.12);
   animation: cta-pulso 2.2s ease-in-out infinite;
 }
@@ -494,10 +495,6 @@
 @keyframes cta-brillo {
   0% { left: -60%; }
   55%, 100% { left: 130%; }
-}
-/* En teléfonos angostos el texto completo cabe en una línea con letra un poco menor. */
-@media (max-width: 420px) {
-  .cta-reservar { font-size: 16.5px; gap: 0.5rem; padding: 0 1rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cta-reservar, .cta-reservar::after { animation: none; }

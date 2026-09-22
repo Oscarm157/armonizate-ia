@@ -57,7 +57,8 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
 
             <Comparador token={token} />
 
-            <div className="mt-6">
+            {/* Mismo ancho que la foto y su botón. */}
+            <div className="mt-4 mx-auto max-w-[min(100%,calc(50dvh*0.8))]">
               <BotonReservar href={whatsapp} texto="Agendar cita" />
             </div>
 
@@ -83,7 +84,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
             {sim.comparativaPathname && (
               <figure className="mt-12">
                 <figcaption className="mb-3 text-center text-[20px] font-semibold text-[var(--crm-ink)]">
-                  Antes y después, lado a lado
+                  Foto comparativa
                 </figcaption>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -94,7 +95,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
               </figure>
             )}
 
-            <div className="mt-10">
+            <div className="mt-10 mx-auto max-w-[min(100%,calc(50dvh*0.8))]">
               <BotonReservar href={whatsapp} texto="Agendar cita" />
             </div>
 
