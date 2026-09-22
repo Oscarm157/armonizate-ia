@@ -1,30 +1,23 @@
-// Sugiere el grado del caso mirando la foto. El ejecutivo lo puede cambiar: es una
-// preselección, no una decisión. Si el servicio falla, se sigue sin sugerencia.
+// Máscara de las orejas de la foto, para medir cuánto se separan de la cabeza.
+// Un modelo de visión que "opina" el grado coincidió con Oscar en 5 de 17 casos; medir
+// la distancia de la punta de la oreja al borde de la cara coincidió en 15 de 17
+// (calibrado el 2026-09-21). La medición se hace en el navegador (medir.ts).
 
-import type { Grado } from "./grado";
-import { correr } from "./replicate";
+import { correrVersion } from "./replicate";
 
-export const MODELO_GRADO = "google/gemini-3-flash";
+// grounded_sam: Grounding DINO + Segment Anything. Versión fija: el cálculo depende de
+// que la tercera salida sea la máscara en blanco y negro.
+const SEGMENTADOR = "ee871c19efb1941f55f66a3d7d960428c8a5afcb77449547fe8e5a3ab9ebc21c";
 
-// Texto calibrado contra la clasificación de Oscar de los 15 casos apartados
-// (armonizate-simulador/dataset/grados_oscar.json).
-export const PROMPT_GRADO = `Mira esta foto de frente de una persona. Evalúa solo cuánto se separan sus orejas de la cabeza, vistas de frente.
-- leve: las orejas apenas se separan; se ve poco de ellas por fuera del contorno de la cabeza.
-- medio: se nota la separación; se ve buena parte de la oreja por fuera del contorno.
-- grave: las orejas se ven casi completas de frente, muy abiertas hacia los lados.
-Responde solo una palabra: leve, medio o grave.`;
-
-const A_GRADO: Record<string, Grado> = { leve: "bajo", medio: "medio", grave: "alto" };
-
-export async function sugerirGrado(imagenDataUrl: string, token: string): Promise<Grado | null> {
-  const r = await correr(
-    MODELO_GRADO,
-    { images: [imagenDataUrl], prompt: PROMPT_GRADO, temperature: 0, max_output_tokens: 20 },
+export async function mascaraOrejas(imagenDataUrl: string, token: string): Promise<string | null> {
+  const r = await correrVersion(
+    SEGMENTADOR,
+    { image: imagenDataUrl, mask_prompt: "ear", negative_mask_prompt: "sky" },
     token,
     "grado"
   );
-  if ("error" in r) return null;
-  const texto = (Array.isArray(r.output) ? r.output.join("") : String(r.output ?? "")).toLowerCase();
-  const palabra = texto.match(/leve|medio|grave/)?.[0];
-  return palabra ? A_GRADO[palabra] : null;
+  if ("error" in r || !Array.isArray(r.output) || typeof r.output[2] !== "string") return null;
+  const img = await fetch(r.output[2]);
+  if (!img.ok) return null;
+  return `data:image/png;base64,${Buffer.from(await img.arrayBuffer()).toString("base64")}`;
 }

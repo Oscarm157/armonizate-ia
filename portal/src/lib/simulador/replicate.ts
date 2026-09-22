@@ -10,16 +10,23 @@ type Prediccion = {
   error?: unknown;
 };
 
-export async function correr(
-  modelo: string,
-  input: Record<string, unknown>,
-  token: string,
-  etiqueta: string
-): Promise<{ output: unknown } | { error: "http" | "fallo" }> {
-  const crear = await fetch(`${API}/models/${modelo}/predictions`, {
+type Resultado = Promise<{ output: unknown } | { error: "http" | "fallo" }>;
+
+/** Modelo oficial, por nombre (siempre su versión más reciente). */
+export function correr(modelo: string, input: Record<string, unknown>, token: string, etiqueta: string): Resultado {
+  return esperar(`${API}/models/${modelo}/predictions`, { input }, token, etiqueta);
+}
+
+/** Modelo comunitario, por versión fija. */
+export function correrVersion(version: string, input: Record<string, unknown>, token: string, etiqueta: string): Resultado {
+  return esperar(`${API}/predictions`, { version, input }, token, etiqueta);
+}
+
+async function esperar(url: string, cuerpo: object, token: string, etiqueta: string): Resultado {
+  const crear = await fetch(url, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ input }),
+    body: JSON.stringify(cuerpo),
   });
 
   if (!crear.ok) {

@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 import { serverEnv } from "@/lib/env";
 import { parseJson } from "@/lib/validate";
-import { sugerirGrado } from "@/lib/simulador/clasificar";
+import { mascaraOrejas } from "@/lib/simulador/clasificar";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,8 +15,9 @@ const bodySchema = z.object({
 });
 
 /**
- * Sugiere el grado de la foto. No cuenta contra el tope mensual: cuesta centavos y no
- * genera imagen. Sí exige sesión y BotID, porque llama a un servicio de pago.
+ * Devuelve la máscara de las orejas; el navegador mide con ella cuánto se separan y
+ * sugiere el grado. No cuenta contra el tope mensual: cuesta una fracción de centavo y
+ * no genera imagen. Sí exige sesión y BotID, porque llama a un servicio de pago.
  */
 export async function POST(request: Request) {
   const me = await getCurrentUser();
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const { REPLICATE_API_TOKEN } = serverEnv();
-  if (!REPLICATE_API_TOKEN) return NextResponse.json({ grado: null });
+  if (!REPLICATE_API_TOKEN) return NextResponse.json({ mascara: null });
 
-  return NextResponse.json({ grado: await sugerirGrado(datos.cabeza, REPLICATE_API_TOKEN) });
+  return NextResponse.json({ mascara: await mascaraOrejas(datos.cabeza, REPLICATE_API_TOKEN) });
 }

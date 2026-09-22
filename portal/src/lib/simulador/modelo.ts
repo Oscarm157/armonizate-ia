@@ -46,26 +46,29 @@ const COLA = `Todo lo demás queda exactamente igual: mismo rostro y facciones, 
  * sobre la fotografía.
  */
 export const PROMPTS: Record<Grado, string> = {
-  alto: `Acerca las orejas de esta persona a la cabeza con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe reducirse de forma clara: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos la mitad. La oreja queda recogida hacia atrás y sigue viéndose por fuera del contorno del cráneo, mucho menos abierta que en el original. Si la oreja quedó invisible de frente o escondida detrás de la cabeza, está mal: es demasiada corrección. Si sigue tan abierta como en el original, también está mal: métela más. ${EJE} ${COLA}`,
+  // Cada grado describe cómo se ve la oreja AL TERMINAR, no qué proporción de lo
+  // original queda: con proporciones, un grado mal elegido dejaba la foto casi igual.
+  // Las metas salen de los resultados reales de la clínica, que pegan la oreja más de
+  // lo que se pedía antes, incluso en casos graves. Calibrado el 2026-09-21 con 24
+  // generaciones contra los casos apartados y los leves 072 y 100 de Oscar.
+  bajo: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: vistas de frente, las orejas quedan recogidas hacia atrás, casi de perfil respecto a la cámara y pegadas al cráneo: de cada oreja solo asoma una franja estrecha, más o menos una décima parte de la oreja, por fuera del contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas y compáralo con la original. En tu resultado ese ancho lo marca casi solo el cráneo. La cabeza conserva su forma y su ancho natural: no la recortes ni la estreches. Si la oreja desapareció por completo o la cabeza se ve recortada a los lados, está mal: es demasiada corrección. Si de la oreja asoma más que una franja estrecha, también está mal: pégala más. ${EJE} ${COLA}`,
 
-  medio: `Acerca las orejas de esta persona a la cabeza con una otoplastia. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho debe reducirse de forma notable: de lo que la oreja sobresalía del cráneo tiene que quedar más o menos un tercio. El contorno de la cabeza queda casi como una curva continua de la sien a la mandíbula, con el borde de la oreja asomando apenas. Si la oreja sigue tan abierta como en el original, está mal: métela más. ${EJE} ${COLA}`,
+  medio: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: de frente las orejas se siguen viendo, pero claramente recogidas hacia atrás y cerca del cráneo: de cada oreja asoma solo una franja delgada, más o menos una sexta parte de la oreja, por fuera del contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas y compáralo con la original. En tu resultado ese ancho se reduce de forma notable, y el contorno de la cabeza queda casi como una curva continua de la sien a la mandíbula. Si la oreja sigue tan abierta como en la original, está mal: métela más. Si la oreja desapareció por completo, también está mal. ${EJE} ${COLA}`,
 
-  // Casos leves: la meta es que la oreja apenas asome, un borde delgado pegado al
-  // cráneo. Una primera versión pedía que no se viera nada y dejaba la cabeza como
-  // recortada a los lados; esta tiene condición de fallo en las dos direcciones.
-  // Probado el 2026-09-21 en 092 (dos corridas, salen parecidas) y 043.
-  bajo: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: de frente, las orejas quedan pegadas al cráneo y apenas asoman: solo se ve un borde delgado de cada oreja junto al contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas. En tu resultado ese ancho lo marca el cráneo más ese borde delgado de la oreja. La cabeza conserva su forma y su ancho natural: no la recortes, no la estreches, no borres las orejas. Si la oreja desapareció por completo o la cabeza se ve recortada a los lados, está mal: es demasiada corrección. Si la oreja todavía sale claramente del contorno, también está mal: pégala más. ${EJE} ${COLA}`,
+  alto: `Aplícale a esta persona una otoplastia. RESULTADO EXIGIDO: la corrección más fuerte que permite una otoplastia sin esconder la oreja: queda recogida hacia atrás, pegada al cráneo, y de frente asoma solo una franja delgada, más o menos una sexta parte de la oreja, por fuera del contorno de la cabeza. Cómo verificarlo: mide el ancho total de la cabeza a la altura de las orejas y compáralo con la original. En tu resultado ese ancho se reduce de forma muy notable. Si la oreja todavía se ve abierta hacia los lados, está mal: métela más. Si la oreja desapareció por completo, también está mal. ${EJE} ${COLA}`,
 };
 
 /**
- * La versión con más empuje de cada grado: misma meta, un escalón más de corrección.
+ * La segunda opción, cuando la primera se quedó corta. Pedir "más fuerza" con la misma
+ * meta no cambiaba nada (probado el 2026-09-21), así que la segunda sube un escalón de
+ * meta: medio y grave piden lo del leve, que es la corrección más pegada.
  */
-const MAS_FUERZA = `Esta es una segunda versión: la anterior se quedó corta. Aplica la corrección con más fuerza que la primera vez, llevando la oreja más cerca del cráneo dentro de lo que pide el resultado.`;
+const MAS_FUERZA = `Esta es una segunda versión: la anterior se quedó corta. Aplica la corrección con más fuerza que la primera vez.`;
 
 export const PROMPTS_FUERTE: Record<Grado, string> = {
   bajo: `${MAS_FUERZA} ${PROMPTS.bajo}`,
-  medio: `${MAS_FUERZA} ${PROMPTS.medio}`,
-  alto: `${MAS_FUERZA} ${PROMPTS.alto}`,
+  medio: `${MAS_FUERZA} ${PROMPTS.bajo}`,
+  alto: `${MAS_FUERZA} ${PROMPTS.bajo}`,
 };
 
 /**
