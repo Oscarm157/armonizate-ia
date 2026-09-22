@@ -81,7 +81,7 @@ export function Comparar({
       {/* Etiquetas fijas: siempre se sabe qué lado es cuál. */}
       {/* La simulación se descubre desde la derecha: el corte esconde su lado izquierdo. */}
       <span className="pointer-events-none absolute top-3 left-3 rounded-full bg-[var(--crm-ink)]/75 px-2.5 py-1 text-[12px] font-medium text-white">
-        Actual
+        Original
       </span>
       <span className="pointer-events-none absolute top-3 right-3 rounded-full bg-[var(--crm-accent)] px-2.5 py-1 text-[12px] font-medium text-[var(--crm-on-accent)]">
         Simulación

@@ -37,7 +37,7 @@ export function Comparador({ token }: { token: string }) {
           className="crm-btn crm-btn-secondary crm-btn-lg w-full max-w-[min(100%,calc(50dvh*0.8))] border-[var(--crm-accent)] text-[var(--crm-accent)]"
         >
           <RefreshCw className="size-5" />
-          {enActual ? "Ver simulación" : "Ver foto actual"}
+          {enActual ? "Ver simulación" : "Ver foto original"}
         </button>
       </div>
     </div>
