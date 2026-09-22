@@ -127,6 +127,10 @@ export function Simulador({
   // Copiar el aviso "Enlace copiado" dura 2 s; esto recuerda que ya se copió para
   // marcar el paso como LISTO y pasar el resaltado al siguiente.
   const [yaCopio, setYaCopio] = useState(false);
+  // Cuántas lleva este ejecutivo en el mes; se le dice al terminar.
+  const [resumenEjecutivo, setResumenEjecutivo] = useState<{ nombre: string; n: number } | null>(null);
+  // La calificación es obligatoria: es la única medida de si el modelo está saliendo bien.
+  const [calificado, setCalificado] = useState(false);
   const [folioCopiado, setFolioCopiado] = useState(false);
   const [repeticiones, setRepeticiones] = useState(0);
   // Paso que el ejecutivo reabrió con "Cambiar"; null = el primero sin terminar.
@@ -248,6 +252,9 @@ export function Simulador({
       };
       setOpciones((prev) => [...prev, nueva]);
       setElegida(opciones.length);
+      setCalificado(false);
+      if (data.ejecutivo && typeof data.delEjecutivo === "number")
+        setResumenEjecutivo({ nombre: data.ejecutivo, n: data.delEjecutivo });
       setYaCopio(false);
       setVista(0);
       setConsumo(data.usadas ?? consumo + 1);
@@ -310,6 +317,8 @@ export function Simulador({
     setEditando(null);
     setVista(0);
     setYaCopio(false);
+    setResumenEjecutivo(null);
+    setCalificado(false);
     fotoRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
   };
@@ -455,6 +464,14 @@ export function Simulador({
 
           {estado === "hecho" ? (
             <>
+              {resumenEjecutivo && (
+                <p className="rounded-[var(--crm-r-md)] bg-[var(--crm-surface)] px-4 py-3 text-[16px] text-[var(--crm-ink)]">
+                  {resumenEjecutivo.nombre} lleva{" "}
+                  <span className="crm-num font-semibold">{resumenEjecutivo.n}</span>{" "}
+                  {resumenEjecutivo.n === 1 ? "simulación" : "simulaciones"} este mes.
+                </p>
+              )}
+
               {opciones.length > 1 && (
                 <Paso n={1} total={4} estado="listo-abierto" titulo="Elija la opción que se ve mejor">
                   <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Opción a mandar">
@@ -508,16 +525,43 @@ export function Simulador({
                 )}
               </Paso>
 
-              <Paso n={base + 2} total={base + 3} estado="abierto" titulo="Califique cómo quedó (opcional)">
+              <Paso
+                n={base + 2}
+                total={base + 3}
+                estado={calificado ? "listo-abierto" : "actual"}
+                titulo="Califique cómo quedó"
+              >
                 {simulacionId && (
-                  <Calificar key={simulacionId} grande valor={null} etiqueta="" onCalificar={(n) => calificarSimulacion(simulacionId, n)} />
+                  <Calificar
+                    key={simulacionId}
+                    grande
+                    valor={null}
+                    etiqueta=""
+                    onCalificar={async (n) => {
+                      const r = await calificarSimulacion(simulacionId, n);
+                      if (!r || !("error" in r) || !r.error) setCalificado(true);
+                      return r;
+                    }}
+                  />
+                )}
+                {!calificado && (
+                  <p className="mt-2 text-[15px] text-[var(--crm-ink-mute)]">
+                    Toque las estrellas: de 1 a 5, qué tan bien quedó la simulación.
+                  </p>
                 )}
               </Paso>
 
-              <Paso n={base + 3} total={base + 3} estado={yaCopio ? "actual" : "abierto"} titulo="Para otro paciente, empiece de nuevo">
-                <button onClick={reiniciar} className="crm-btn crm-btn-secondary crm-btn-lg w-full">
+              <Paso n={base + 3} total={base + 3} estado={yaCopio && calificado ? "actual" : "abierto"} titulo="Para otro paciente, empiece de nuevo">
+                <button
+                  onClick={reiniciar}
+                  disabled={!calificado}
+                  className="crm-btn crm-btn-secondary crm-btn-lg w-full"
+                >
                   Hacer otra simulación
                 </button>
+                {!calificado && (
+                  <p className="mt-2 text-[15px] text-[var(--crm-ink)]">Falta calificar la simulación del paso {base + 2}.</p>
+                )}
               </Paso>
 
               {repeticiones < 1 && !agotado && (

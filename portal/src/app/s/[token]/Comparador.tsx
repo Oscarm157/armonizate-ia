@@ -33,7 +33,8 @@ export function Comparador({ token }: { token: string }) {
           type="button"
           aria-pressed={enActual}
           onClick={() => setVista(enActual ? 0 : 100)}
-          className="crm-btn crm-btn-primary crm-btn-lg w-full max-w-[min(100%,calc(50dvh*0.8))]"
+          // Secundario: el principal de la página es el de WhatsApp.
+          className="crm-btn crm-btn-secondary crm-btn-lg w-full max-w-[min(100%,calc(50dvh*0.8))] border-[var(--crm-accent)] text-[var(--crm-accent)]"
         >
           <RefreshCw className="size-5" />
           {enActual ? "Ver simulación" : "Ver foto actual"}

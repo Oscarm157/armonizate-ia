@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { ejecutivos, prospectos, simulaciones } from "@/lib/schema";
 import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
-import { consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
+import { consumoDelEjecutivo, consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
 import { CODIGOS_SEDE } from "@/lib/sedes";
 import { nuevoToken, venceEn } from "@/lib/enlace";
 import { serverEnv } from "@/lib/env";
@@ -134,5 +134,8 @@ export async function POST(request: Request) {
     imagen: `data:image/jpeg;base64,${res.base64}`,
     usadas: usadas + 1,
     tope: TOPE_MENSUAL,
+    // Cuántas lleva este ejecutivo en el mes: se le muestra al terminar.
+    delEjecutivo: await consumoDelEjecutivo(ejecutivo.id),
+    ejecutivo: ejecutivo.nombre,
   });
 }

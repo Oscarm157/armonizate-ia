@@ -27,6 +27,15 @@ export async function consumoDelMes(): Promise<number> {
   return rows[0]?.n ?? 0;
 }
 
+/** Generaciones de un ejecutivo este mes. Es lo que se le muestra al terminar. */
+export async function consumoDelEjecutivo(ejecutivoId: string): Promise<number> {
+  const rows = await db
+    .select({ n: count() })
+    .from(simulaciones)
+    .where(and(eq(simulaciones.ejecutivoId, ejecutivoId), gte(simulaciones.creadoEn, inicioDelMes())));
+  return rows[0]?.n ?? 0;
+}
+
 /** La lista de ejecutivos. Con `soloActivos` es la que se ofrece al generar. */
 export async function listaEjecutivos({ soloActivos = false } = {}): Promise<Ejecutivo[]> {
   return db
