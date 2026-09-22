@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Clock, ShieldCheck, Sparkles } from "lucide-react";
+import { Clock, Footprints, ShieldCheck, Sparkles, Syringe, Users } from "lucide-react";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 import { enlaceWhatsApp, nombreSede } from "@/lib/sedes";
@@ -7,24 +7,15 @@ import { Comparador } from "./Comparador";
 import { BotonReservar } from "./BotonReservar";
 import { BarraReservar } from "./BarraReservar";
 
-// Citas literales de clinicaarmonizate.mx (home y /otomodelacion), revisadas el
-// 2026-09-21. No se agrega nada que el sitio no diga.
+// Datos de clinicaarmonizate.mx (home y /otomodelacion, revisados el 2026-09-21),
+// acortados para leerse de un vistazo. No se agrega nada que el sitio no diga.
 const VENTAJAS = [
-  {
-    titulo: "Rápido y ambulatorio",
-    icono: Clock,
-    puntos: ["Aprox. 60 minutos en consultorio", "Procedimiento ambulatorio", "Sin incapacidad. Retorno inmediato a actividades cotidianas"],
-  },
-  {
-    titulo: "Sin cirugía",
-    icono: Sparkles,
-    puntos: ["Sin cirugía, cortes ni cicatrices", "Anestesia local leve", "Resultados inmediatos y naturales"],
-  },
-  {
-    titulo: "Respaldo",
-    icono: ShieldCheck,
-    puntos: ["+2,500 pacientes", "Es reversible", "Incluye garantía médica de 3 meses"],
-  },
+  { texto: "60 min en consultorio", icono: Clock },
+  { texto: "Ambulatorio, sin incapacidad", icono: Footprints },
+  { texto: "Sin cortes ni cicatrices", icono: Sparkles },
+  { texto: "Anestesia local leve", icono: Syringe },
+  { texto: "+2,500 pacientes", icono: Users },
+  { texto: "Garantía médica de 3 meses", icono: ShieldCheck },
 ];
 
 type Sim = { id: string; sede: string | null; comparativaPathname: string | null };
@@ -76,27 +67,21 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
               </p>
             </div>
 
-            <section className="mt-12">
+            <section className="mt-10">
               <h2 className="text-center text-[24px] font-semibold text-[var(--crm-ink)]">Ventajas de la otomodelación</h2>
-              <div className="mt-5 space-y-3">
-                {VENTAJAS.map(({ titulo, icono: Icono, puntos }) => (
-                  <div key={titulo} className="rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-5 py-5">
-                    <p className="flex items-center gap-3 text-[18px] font-semibold text-[var(--crm-ink)]">
-                      <span className="grid size-10 place-items-center rounded-[12px] bg-[var(--crm-accent)] text-[var(--crm-on-accent)]">
-                        <Icono className="size-5" />
-                      </span>
-                      {titulo}
-                    </p>
-                    <ul className="mt-3 space-y-1.5 pl-[52px]">
-                      {puntos.map((p) => (
-                        <li key={p} className="text-[16px] leading-snug text-[var(--crm-ink-soft)]">
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+              <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                {VENTAJAS.map(({ texto, icono: Icono }) => (
+                  <li
+                    key={texto}
+                    className="flex flex-col items-center gap-2 rounded-[var(--crm-r-md)] bg-[var(--crm-surface)] px-3 py-4 text-center"
+                  >
+                    <span className="grid size-10 place-items-center rounded-[12px] bg-[var(--crm-accent)] text-[var(--crm-on-accent)]">
+                      <Icono className="size-5" />
+                    </span>
+                    <span className="text-[15px] leading-snug font-medium text-[var(--crm-ink)]">{texto}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </section>
 
             {/* La misma pieza que se puede guardar o reenviar: el comparador solo vive
@@ -125,7 +110,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
             </div>
 
             <p className="mt-6 text-center text-[15px] text-[var(--crm-ink-mute)]">
-              Este enlace estará disponible por {HORAS_VIGENCIA} horas · clinicaarmonizate.mx
+              Este enlace estará disponible por {HORAS_VIGENCIA} horas. clinicaarmonizate.mx
             </p>
 
             <BarraReservar href={whatsapp} texto="Reservar mi cupo por WhatsApp" vigilar="reservar-principal" />
