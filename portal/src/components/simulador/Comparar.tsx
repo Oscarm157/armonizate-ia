@@ -98,7 +98,8 @@ export function Comparar({
         className="absolute inset-y-0 w-1 -translate-x-1/2 cursor-ew-resize bg-white shadow-[0_0_6px_rgba(18,19,51,0.45)] focus-visible:outline-none"
         style={{ left: `${posicion}%` }}
       >
-        <span className="absolute top-1/2 left-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-[var(--crm-ink)] shadow-[0_2px_12px_rgba(18,19,51,0.35)]">
+        {/* Abajo y no al centro: al centro la ruedita cae justo sobre las orejas. */}
+        <span className="absolute left-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-[var(--crm-ink)] shadow-[0_2px_12px_rgba(18,19,51,0.35)]" style={{ top: "78%" }}>
           <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth={2.2}>
             <path d="M9 6 4 12l5 6M15 6l5 6-5 6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

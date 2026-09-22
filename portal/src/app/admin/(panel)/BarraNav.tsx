@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,7 +11,8 @@ function isActive(pathname: string, href: string) {
 }
 
 // Barra arriba y no menú lateral: el portal vive dentro del panel de la clínica, que ya
-// trae su propio menú a la izquierda, y el marco mide unos 1,090 × 660 px.
+// trae su propio menú a la izquierda, y el marco mide unos 1,090 × 660 px. Sin logo por
+// lo mismo: la marca ya está en el panel que lo contiene.
 export function BarraNav({ esAdmin, logoutAction }: { esAdmin: boolean; logoutAction: () => void }) {
   const pathname = usePathname();
 
@@ -30,10 +30,7 @@ export function BarraNav({ esAdmin, logoutAction }: { esAdmin: boolean; logoutAc
   }
 
   return (
-    <header className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 pt-4 pb-2 sm:px-8">
-      <Link href="/admin" aria-label="Clínica Armonízate" className="shrink-0">
-        <Image src="/logo-armonizate.png" alt="Clínica Armonízate" width={1410} height={377} priority className="h-7 w-auto" />
-      </Link>
+    <header className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 pt-3 pb-2 sm:px-8">
       <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {items.map(({ href, label }) => {
           const activo = isActive(pathname, href);
