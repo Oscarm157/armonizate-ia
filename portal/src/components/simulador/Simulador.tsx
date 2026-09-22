@@ -40,7 +40,7 @@ const GUIA = [
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Sugiere el grado midiendo la oreja: el servidor devuelve la máscara de las orejas del
+ * Sugiere el grado midiendo la oreja: el servidor devuelve dónde están las orejas en el
  * recorte y aquí se mide cuánto sale la punta de la oreja del borde de la cara.
  */
 async function sugerirGrado(img: HTMLImageElement, pts: Parameters<typeof cajaCabeza>[0]): Promise<Grado | null> {
@@ -49,20 +49,14 @@ async function sugerirGrado(img: HTMLImageElement, pts: Parameters<typeof cajaCa
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ cabeza: recorteCabeza(img, pts, 0.85) }),
   });
-  const d: { mascara: string | null } | null = res.ok ? await res.json() : null;
-  if (!d?.mascara) return null;
+  const d: { cajas: number[][] | null } | null = res.ok ? await res.json() : null;
+  if (!d?.cajas) return null;
 
-  const m = await cargarImagen(d.mascara);
-  const c = document.createElement("canvas");
-  c.width = 1024;
-  c.height = 1024;
-  const ctx = c.getContext("2d")!;
-  ctx.drawImage(m, 0, 0, 1024, 1024);
   // Los puntos de la cara, llevados a las coordenadas del recorte.
   const caja = cajaCabeza(pts, img.naturalWidth, img.naturalHeight);
   const escala = 1024 / caja.lado;
   const enRecorte = pts.map((p) => ({ x: (p.x - caja.x) * escala, y: (p.y - caja.y) * escala }));
-  return gradoPorMedida(ctx.getImageData(0, 0, 1024, 1024), enRecorte);
+  return gradoPorMedida(d.cajas, enRecorte);
 }
 
 /** Recorte cuadrado de la cabeza: el modelo necesita píxeles de oreja para trabajar. */

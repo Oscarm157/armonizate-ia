@@ -8,29 +8,21 @@ const CORTE_GRAVE = 0.13;
 const CORTE_MEDIO = 0.09;
 
 /**
- * Grado a partir de la máscara de las orejas (blanco = oreja) y los puntos de la cara,
- * los dos en las coordenadas del recorte de la cabeza. Mide, de cada lado, la distancia
- * del punto más externo de la oreja al borde de la cara, y promedia los dos lados.
+ * Grado a partir de las cajas de las orejas ([ymin, xmin, ymax, xmax] en 0-1000) y los
+ * puntos de la cara en coordenadas del recorte de la cabeza (lado 1024). Mide, de cada
+ * lado, la distancia del borde externo de la oreja al borde de la cara, y promedia.
  */
-export function gradoPorMedida(mascara: ImageData, pts: Punto[]): Grado | null {
-  const { width: ancho, height: alto, data } = mascara;
+export function gradoPorMedida(cajas: number[][], pts: Punto[], lado = 1024): Grado | null {
   const xIzq = pts[LATERAL_IZQ].x;
   const xDer = pts[LATERAL_DER].x;
   const anchoCara = xDer - xIzq;
   if (anchoCara <= 0) return null;
 
-  let minIzq = Infinity;
-  let maxDer = -Infinity;
-  const mitad = ancho / 2;
-  for (let y = 0; y < alto; y++) {
-    for (let x = 0; x < ancho; x++) {
-      if (data[(y * ancho + x) * 4] <= 127) continue;
-      if (x < mitad) minIzq = Math.min(minIzq, x);
-      else maxDer = Math.max(maxDer, x);
-    }
-  }
-  if (minIzq === Infinity || maxDer === -Infinity) return null;
+  const enPx = cajas.map(([, xmin, , xmax]) => [(xmin * lado) / 1000, (xmax * lado) / 1000]);
+  const izq = enPx.filter(([a, b]) => (a + b) / 2 < lado / 2).map(([a]) => a);
+  const der = enPx.filter(([a, b]) => (a + b) / 2 >= lado / 2).map(([, b]) => b);
+  if (!izq.length || !der.length) return null;
 
-  const sale = ((xIzq - minIzq) / anchoCara + (maxDer - xDer) / anchoCara) / 2;
+  const sale = ((xIzq - Math.min(...izq)) / anchoCara + (Math.max(...der) - xDer) / anchoCara) / 2;
   return sale >= CORTE_GRAVE ? "alto" : sale >= CORTE_MEDIO ? "medio" : "bajo";
 }
