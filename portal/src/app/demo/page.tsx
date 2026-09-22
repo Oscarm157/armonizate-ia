@@ -4,7 +4,7 @@ import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
 
 // Es material de venta, no una simulación de nadie: no hay token ni caducidad.
 export const metadata = {
-  title: "Simulación de otomodelación · Clínica Armonízate",
+  title: "Simulación de Otomodelación · Clínica Armonízate",
   robots: { index: false, follow: false },
 };
 

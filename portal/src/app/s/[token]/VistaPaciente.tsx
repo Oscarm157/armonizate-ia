@@ -43,7 +43,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
             <p className="mx-auto mt-3 mb-7 max-w-[38ch] text-[18px] leading-relaxed text-[var(--crm-ink-soft)]">
               Los enlaces duran {HORAS_VIGENCIA} horas. Escríbenos por WhatsApp y te lo mandamos de nuevo.
             </p>
-            <BotonReservar href={whatsapp} texto="Escribir por WhatsApp" />
+            <BotonReservar href={whatsapp} texto="Volver a WhatsApp" />
           </div>
         ) : (
           <>
@@ -51,7 +51,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
               ¡Hola! Tu simulación está lista
             </h1>
             <p className="mx-auto mt-2 mb-5 max-w-[38ch] text-center text-[18px] leading-relaxed text-[var(--crm-ink-soft)]">
-              Así se verían tus orejas con la otomodelación.
+              Así se verían tus orejas con la Otomodelación.
             </p>
 
             {/* Primero la comparativa: es la que muestra el cambio de golpe, y es la pieza
@@ -68,21 +68,11 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
             )}
 
             <div className="mt-5 mx-auto max-w-[min(100%,calc(50dvh*0.8))]">
-              <BotonReservar href={whatsapp} texto="Escribir por WhatsApp" />
+              <BotonReservar href={whatsapp} texto="Volver a WhatsApp" />
             </div>
 
             <section className="mt-12">
-              <h2 className="text-center text-[20px] font-semibold text-[var(--crm-ink)]">Compara tu foto actual</h2>
-              <p className="mt-1 text-center text-[16px] text-[var(--crm-ink-mute)]">
-                Arrastra el control sobre la foto.
-              </p>
-              <div className="mt-4">
-                <Comparador token={token} />
-              </div>
-            </section>
-
-            <section className="mt-10">
-              <h2 className="text-center text-[24px] font-semibold text-[var(--crm-ink)]">Ventajas de la otomodelación</h2>
+              <h2 className="text-center text-[24px] font-semibold text-[var(--crm-ink)]">Ventajas de la Otomodelación</h2>
               <ul className="mx-auto mt-4 max-w-[400px] divide-y divide-[var(--crm-line)] rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-5">
                 {VENTAJAS.map(({ texto, icono: Icono }) => (
                   <li key={texto} className="flex items-center gap-3 py-3.5">
@@ -95,8 +85,18 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
               </ul>
             </section>
 
+            <section className="mt-10">
+              <h2 className="text-center text-[20px] font-semibold text-[var(--crm-ink)]">Compara tu foto actual</h2>
+              <p className="mt-1 text-center text-[16px] text-[var(--crm-ink-mute)]">
+                Arrastra el control sobre la foto.
+              </p>
+              <div className="mt-4">
+                <Comparador token={token} />
+              </div>
+            </section>
+
             <div className="mt-10 mx-auto max-w-[min(100%,calc(50dvh*0.8))]">
-              <BotonReservar href={whatsapp} texto="Escribir por WhatsApp" />
+              <BotonReservar href={whatsapp} texto="Volver a WhatsApp" />
             </div>
 
             <div className="mt-10 rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-6 py-6">

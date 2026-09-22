@@ -27,7 +27,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "Simulador · Clínica Armonízate",
-  description: "Herramienta interna de simulación de otomodelación.",
+  description: "Herramienta interna de simulación de Otomodelación.",
   robots: { index: false, follow: false },
 };
 

@@ -19,7 +19,7 @@ export default async function SimuladorPage() {
       {/* Encabezado compacto: dentro del panel de la clínica el marco mide ~660 px de
           alto y el espacio se lo lleva el flujo, no el título. El consumo no se enseña
           aquí: al terminar se le dice al ejecutivo cuántas lleva él. */}
-      <h1 className="mb-5 text-[24px] font-medium text-[var(--crm-ink)]">Simulador de otomodelación</h1>
+      <h1 className="mb-5 text-[24px] font-medium text-[var(--crm-ink)]">Simulador de Otomodelación</h1>
       <Simulador
         usadas={usadas}
         tope={TOPE_MENSUAL}
