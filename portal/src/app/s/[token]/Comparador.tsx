@@ -14,7 +14,8 @@ export function Comparador({ token }: { token: string }) {
 
   return (
     <div>
-      <figure className="crm-flotante overflow-hidden">
+      {/* En escritorio el alto manda: la foto cabe con los botones sin bajar. */}
+      <figure className="crm-flotante mx-auto max-w-[min(100%,calc(50dvh*0.8))] bg-[var(--crm-surface-3)] overflow-hidden">
         <Comparar
           actual={`/s/${token}/antes`}
           simulacion={`/s/${token}/simulacion`}

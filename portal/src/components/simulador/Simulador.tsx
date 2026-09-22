@@ -16,6 +16,7 @@ import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
 import { DibujoGrado } from "./DibujoGrado";
 import { gradoPorMedida } from "@/lib/simulador/medir";
+import { CODIGOS_SEDE, SEDES } from "@/lib/sedes";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 
 type Estado = "vacio" | "listo" | "generando" | "hecho" | "error";
@@ -91,7 +92,7 @@ export function Simulador({
 }: {
   usadas: number;
   tope: number;
-  ejecutivos: { id: string; nombre: string }[];
+  ejecutivos: { id: string; nombre: string; sede: string | null }[];
 }) {
   const [estado, setEstado] = useState<Estado>("vacio");
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +117,8 @@ export function Simulador({
   // Se elige en cada simulación, a propósito sin recordar el anterior: el acceso es
   // compartido y el mismo equipo lo usan varias personas.
   const [ejecutivoId, setEjecutivoId] = useState("");
+  // La sucursal decide a qué WhatsApp escribe el paciente desde su enlace.
+  const [sede, setSede] = useState("");
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
   const [copiado, setCopiado] = useState(false);
@@ -143,7 +146,7 @@ export function Simulador({
   const agotado = consumo >= tope;
   const correoOk = CORREO.test(correo.trim());
   const vambeOk = /^https?:\/\/\S+$/.test(vambe.trim());
-  const datosListos = !!ejecutivoId && correoOk && vambeOk;
+  const datosListos = !!ejecutivoId && !!sede && correoOk && vambeOk;
   const listoParaGenerar = !!grado && datosListos;
 
   const cargar = useCallback(async (file: File) => {
@@ -212,6 +215,7 @@ export function Simulador({
           grado,
           fuerte: hayPrevia,
           ejecutivoId,
+          sede,
           correo: correo.trim(),
           vambe: vambe.trim(),
         }),
@@ -260,7 +264,7 @@ export function Simulador({
       // Si falla la segunda, la primera sigue ahí y se puede mandar.
       setEstado(hayPrevia ? "hecho" : "error");
     }
-  }, [original, grado, ejecutivoId, correo, vambe, consumo, opciones.length]);
+  }, [original, grado, ejecutivoId, sede, correo, vambe, consumo, opciones.length]);
 
   const op = opciones[elegida];
   const resultado = op?.resultado ?? null;
@@ -293,6 +297,7 @@ export function Simulador({
     setMidiendo(false);
     fotoTurno.current++;
     setEjecutivoId("");
+    setSede("");
     setCorreo("");
     setVambe("");
     setFolioCopiado(false);
@@ -318,6 +323,7 @@ export function Simulador({
     !original && "la foto del paciente",
     !grado && "el grado del caso",
     !ejecutivoId && "el nombre del ejecutivo",
+    !sede && "la sucursal del paciente",
     !correoOk && "el correo del paciente",
     !vambeOk && "el enlace de Vambe",
   ].filter(Boolean) as string[];
@@ -625,7 +631,12 @@ export function Simulador({
                       id="ejecutivo"
                       className="crm-input text-[16px]!"
                       value={ejecutivoId}
-                      onChange={(e) => setEjecutivoId(e.target.value)}
+                      onChange={(e) => {
+                        setEjecutivoId(e.target.value);
+                        // La sucursal se propone con la del ejecutivo; se puede cambiar.
+                        const suya = ejecutivos.find((x) => x.id === e.target.value)?.sede;
+                        if (suya && !sede) setSede(suya);
+                      }}
                       disabled={ocupado}
                     >
                       <option value="" disabled>
@@ -634,6 +645,28 @@ export function Simulador({
                       {ejecutivos.map((e) => (
                         <option key={e.id} value={e.id}>
                           {e.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </Campo>
+                  <Campo
+                    id="sede"
+                    etiqueta="Sucursal del paciente"
+                    ayuda="El paciente podrá escribir al WhatsApp de esta sucursal desde su enlace."
+                  >
+                    <select
+                      id="sede"
+                      className="crm-input text-[16px]!"
+                      value={sede}
+                      onChange={(e) => setSede(e.target.value)}
+                      disabled={ocupado}
+                    >
+                      <option value="" disabled>
+                        Elija la sucursal
+                      </option>
+                      {CODIGOS_SEDE.map((c) => (
+                        <option key={c} value={c}>
+                          {SEDES[c].nombre}
                         </option>
                       ))}
                     </select>
