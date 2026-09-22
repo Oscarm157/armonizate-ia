@@ -83,7 +83,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
 
             <section className="mt-10">
               <h2 className="text-center text-[24px] font-semibold text-[var(--crm-ink)]">Ventajas de la otomodelación</h2>
-              <ul className="mt-4 divide-y divide-[var(--crm-line)] rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-5">
+              <ul className="mx-auto mt-4 max-w-[400px] divide-y divide-[var(--crm-line)] rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-5">
                 {VENTAJAS.map(({ texto, icono: Icono }) => (
                   <li key={texto} className="flex items-center gap-3 py-3.5">
                     <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[var(--crm-accent)] text-[var(--crm-on-accent)]">
