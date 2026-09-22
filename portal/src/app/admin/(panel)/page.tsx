@@ -30,7 +30,7 @@ export default async function SimuladorPage() {
       <Simulador
         usadas={usadas}
         tope={TOPE_MENSUAL}
-        ejecutivos={ejecutivos.map((e) => ({ id: e.id, nombre: e.nombre, sede: e.sede }))}
+        ejecutivos={ejecutivos.map((e) => ({ id: e.id, nombre: e.nombre, sedes: e.sedes }))}
       />
     </div>
   );

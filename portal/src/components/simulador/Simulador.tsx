@@ -92,7 +92,7 @@ export function Simulador({
 }: {
   usadas: number;
   tope: number;
-  ejecutivos: { id: string; nombre: string; sede: string | null }[];
+  ejecutivos: { id: string; nombre: string; sedes: string[] }[];
 }) {
   const [estado, setEstado] = useState<Estado>("vacio");
   const [error, setError] = useState<string | null>(null);
@@ -339,6 +339,9 @@ export function Simulador({
   const actual = editando ?? siguiente;
   const ocupado = estado === "generando";
   const tituloGrado = GRADOS.find((g) => g.valor === grado)?.titulo;
+  const sedesDelEjecutivo = (ejecutivos.find((x) => x.id === ejecutivoId)?.sedes ?? []).filter(
+    (c): c is (typeof CODIGOS_SEDE)[number] => c in SEDES
+  );
 
   const abrirSelector = () => inputRef.current?.click();
   // Con dos opciones, el primer paso del resultado es elegir cuál mandar.
@@ -685,9 +688,10 @@ export function Simulador({
                       value={ejecutivoId}
                       onChange={(e) => {
                         setEjecutivoId(e.target.value);
-                        // La sucursal se propone con la del ejecutivo; se puede cambiar.
-                        const suya = ejecutivos.find((x) => x.id === e.target.value)?.sede;
-                        if (suya && !sede) setSede(suya);
+                        // Si el ejecutivo atiende una sola sucursal, se propone; con varias,
+                        // las suyas aparecen primero en la lista.
+                        const suyas = ejecutivos.find((x) => x.id === e.target.value)?.sedes ?? [];
+                        if (suyas.length === 1 && !sede) setSede(suyas[0]);
                       }}
                       disabled={ocupado}
                     >
@@ -716,11 +720,22 @@ export function Simulador({
                       <option value="" disabled>
                         Elija la sucursal
                       </option>
-                      {CODIGOS_SEDE.map((c) => (
-                        <option key={c} value={c}>
-                          {SEDES[c].nombre}
-                        </option>
-                      ))}
+                      {sedesDelEjecutivo.length > 0 && (
+                        <optgroup label="Sucursales del ejecutivo">
+                          {sedesDelEjecutivo.map((c) => (
+                            <option key={c} value={c}>
+                              {SEDES[c].nombre}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label={sedesDelEjecutivo.length > 0 ? "Otras sucursales" : "Sucursales"}>
+                        {CODIGOS_SEDE.filter((c) => !sedesDelEjecutivo.includes(c)).map((c) => (
+                          <option key={c} value={c}>
+                            {SEDES[c].nombre}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                   </Campo>
                   <Campo
