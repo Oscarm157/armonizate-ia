@@ -20,7 +20,7 @@ export default async function EjecutivosPage() {
         title="Ejecutivos"
         description="Los nombres que aparecen al generar una simulación. Un ejecutivo desactivado deja de aparecer, pero su historial se conserva."
       />
-      <Ejecutivos lista={lista.map((e) => ({ id: e.id, nombre: e.nombre, sede: e.sede ?? "", activo: e.activo }))} />
+      <Ejecutivos lista={lista.map((e) => ({ id: e.id, nombre: e.nombre, sedes: e.sedes, activo: e.activo }))} />
     </div>
   );
 }

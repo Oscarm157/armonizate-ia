@@ -4,58 +4,73 @@ import { useState, useTransition } from "react";
 import { SEDES, CODIGOS_SEDE } from "@/lib/sedes";
 import { activarEjecutivo, agregarEjecutivo, editarEjecutivo } from "./acciones";
 
-type Fila = { id: string; nombre: string; sede: string; activo: boolean };
+type Fila = { id: string; nombre: string; sedes: string[]; activo: boolean };
 
-function SelectSede({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+/** Sucursales como botones que se prenden y apagan: un ejecutivo puede tener varias. */
+function ElegirSedes({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
   return (
-    <select id={id} aria-label="Sede" className="crm-input" value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Sin sede</option>
-      {CODIGOS_SEDE.map((c) => (
-        <option key={c} value={c}>
-          {SEDES[c].nombre}
-        </option>
-      ))}
-    </select>
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Sucursales">
+      {CODIGOS_SEDE.map((c) => {
+        const puesta = value.includes(c);
+        return (
+          <button
+            key={c}
+            type="button"
+            aria-pressed={puesta}
+            onClick={() => onChange(puesta ? value.filter((x) => x !== c) : [...value, c])}
+            className={`rounded-full border px-3 py-1.5 text-[13.5px] transition-colors ${
+              puesta
+                ? "border-[var(--crm-accent)] bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
+                : "border-[var(--crm-line-strong)] bg-[var(--crm-surface)] text-[var(--crm-ink-soft)] hover:border-[var(--crm-accent)]"
+            }`}
+          >
+            {SEDES[c].nombre}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 export function Ejecutivos({ lista }: { lista: Fila[] }) {
   const [nombre, setNombre] = useState("");
-  const [sede, setSede] = useState("");
+  const [sedes, setSedes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pendiente, iniciar] = useTransition();
 
   const agregar = () =>
     iniciar(async () => {
-      const r = await agregarEjecutivo(nombre, sede);
+      const r = await agregarEjecutivo(nombre, sedes);
       if ("error" in r) return setError(r.error ?? null);
       setError(null);
       setNombre("");
-      setSede("");
+      setSedes([]);
     });
 
   return (
     <div className="space-y-6">
       <form
-        className="crm-mesa grid gap-3 p-5 sm:grid-cols-[1fr_220px_auto] sm:items-end"
+        className="crm-mesa space-y-3 p-5"
         onSubmit={(e) => {
           e.preventDefault();
           agregar();
         }}
       >
-        <label className="block">
-          <span className="crm-eyebrow mb-1.5 block">Nombre</span>
-          <input id="nuevo-nombre" className="crm-input" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className="crm-eyebrow mb-1.5 block">Sede</span>
-          <SelectSede id="nueva-sede" value={sede} onChange={setSede} />
-        </label>
-        <button type="submit" disabled={pendiente || nombre.trim().length < 2} className="crm-btn crm-btn-primary justify-center">
-          Agregar
-        </button>
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <label className="block">
+            <span className="crm-eyebrow mb-1.5 block">Nombre</span>
+            <input id="nuevo-nombre" className="crm-input" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          </label>
+          <button type="submit" disabled={pendiente || nombre.trim().length < 2} className="crm-btn crm-btn-primary justify-center">
+            Agregar
+          </button>
+        </div>
+        <div>
+          <span className="crm-eyebrow mb-1.5 block">Sucursales</span>
+          <ElegirSedes value={sedes} onChange={setSedes} />
+        </div>
         {error && (
-          <p className="text-[13px] text-[var(--crm-danger)] sm:col-span-3" role="alert">
+          <p className="text-[13px] text-[var(--crm-danger)]" role="alert">
             {error}
           </p>
         )}
@@ -78,10 +93,11 @@ export function Ejecutivos({ lista }: { lista: Fila[] }) {
 
 function FilaEjecutivo({ fila }: { fila: Fila }) {
   const [nombre, setNombre] = useState(fila.nombre);
-  const [sede, setSede] = useState(fila.sede);
+  const [sedes, setSedes] = useState(fila.sedes);
   const [error, setError] = useState<string | null>(null);
   const [pendiente, iniciar] = useTransition();
-  const cambiado = nombre !== fila.nombre || sede !== fila.sede;
+  const cambiado =
+    nombre !== fila.nombre || sedes.length !== fila.sedes.length || sedes.some((x) => !fila.sedes.includes(x));
 
   const correr = (accion: () => Promise<{ error?: string }>) =>
     iniciar(async () => {
@@ -90,33 +106,35 @@ function FilaEjecutivo({ fila }: { fila: Fila }) {
     });
 
   return (
-    <li className={`grid gap-3 py-4 sm:grid-cols-[1fr_220px_auto_auto] sm:items-center ${fila.activo ? "" : "opacity-55"}`}>
-      <input
-        id={`nombre-${fila.id}`}
-        aria-label="Nombre"
-        className="crm-input"
-        value={nombre}
-        onChange={(e) => setNombre(e.target.value)}
-      />
-      <SelectSede id={`sede-${fila.id}`} value={sede} onChange={setSede} />
-      <button
-        type="button"
-        disabled={!cambiado || pendiente}
-        onClick={() => correr(() => editarEjecutivo(fila.id, nombre, sede))}
-        className="crm-btn crm-btn-secondary crm-btn-sm justify-center"
-      >
-        Guardar
-      </button>
-      <button
-        type="button"
-        disabled={pendiente}
-        onClick={() => correr(() => activarEjecutivo(fila.id, !fila.activo))}
-        className="crm-btn crm-btn-sm justify-center text-[var(--crm-ink-mute)]"
-      >
-        {fila.activo ? "Desactivar" : "Activar"}
-      </button>
+    <li className={`space-y-3 py-4 ${fila.activo ? "" : "opacity-55"}`}>
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+        <input
+          id={`nombre-${fila.id}`}
+          aria-label="Nombre"
+          className="crm-input"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+        />
+        <button
+          type="button"
+          disabled={!cambiado || pendiente}
+          onClick={() => correr(() => editarEjecutivo(fila.id, nombre, sedes))}
+          className="crm-btn crm-btn-secondary crm-btn-sm justify-center"
+        >
+          Guardar
+        </button>
+        <button
+          type="button"
+          disabled={pendiente}
+          onClick={() => correr(() => activarEjecutivo(fila.id, !fila.activo))}
+          className="crm-btn crm-btn-sm justify-center text-[var(--crm-ink-mute)]"
+        >
+          {fila.activo ? "Desactivar" : "Activar"}
+        </button>
+      </div>
+      <ElegirSedes value={sedes} onChange={setSedes} />
       {error && (
-        <p className="text-[13px] text-[var(--crm-danger)] sm:col-span-4" role="alert">
+        <p className="text-[13px] text-[var(--crm-danger)]" role="alert">
           {error}
         </p>
       )}

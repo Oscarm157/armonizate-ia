@@ -21,12 +21,12 @@ export type User = typeof users.$inferSelect;
 
 // ===== Ejecutivos =====
 // El acceso es con una clave compartida, así que la sesión no dice quién generó cada
-// simulación: el ejecutivo se elige de esta lista al generar. La sede sale de aquí y
-// alimenta el reporte por plaza.
+// simulación: el ejecutivo se elige de esta lista al generar. Un ejecutivo puede
+// atender varias sucursales: al generar se le proponen primero las suyas.
 export const ejecutivos = pgTable("ejecutivos", {
   id: uuid("id").primaryKey().defaultRandom(),
   nombre: text("nombre").notNull(),
-  sede: text("sede").$type<Sede>(),
+  sedes: text("sedes").array().$type<Sede[]>().default([]).notNull(),
   activo: boolean("activo").default(true).notNull(),
   creadoEn: timestamp("creado_en", { withTimezone: true }).defaultNow(),
 });

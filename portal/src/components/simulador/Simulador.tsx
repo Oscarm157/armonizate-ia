@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, Copy, ImageUp, Link2, RotateCcw, Sparkles } from "lucide-react";
+import { AlertCircle, Check, Copy, ImageUp, Link2, Loader2, RotateCcw, Sparkles } from "lucide-react";
 import { cargarImagen, detectar } from "@/lib/simulador/landmarks";
 import { cajaCabeza } from "@/lib/simulador/geometria";
 import { componer } from "@/lib/simulador/componer";
@@ -92,7 +92,7 @@ export function Simulador({
 }: {
   usadas: number;
   tope: number;
-  ejecutivos: { id: string; nombre: string; sede: string | null }[];
+  ejecutivos: { id: string; nombre: string; sedes: string[] }[];
 }) {
   const [estado, setEstado] = useState<Estado>("vacio");
   const [error, setError] = useState<string | null>(null);
@@ -105,11 +105,13 @@ export function Simulador({
   const [opciones, setOpciones] = useState<Opcion[]>([]);
   const [elegida, setElegida] = useState(0);
   const [grado, setGrado] = useState<Grado | null>(null);
-  // Si el grado lo puso el sistema y no el ejecutivo: se le dice para que lo revise.
-  const [sugerido, setSugerido] = useState(false);
+  // El grado que mide el sistema. No se aplica solo: el ejecutivo lo confirma o elige
+  // otro, así el grado siempre lo decide una persona.
+  const [sugerencia, setSugerencia] = useState<Grado | null>(null);
   const fotoTurno = useRef(0);
-  // Mientras se mide la oreja para sugerir el grado.
+  // Mientras se mide la oreja el paso 2 queda bloqueado, para no interrumpirlo.
   const [midiendo, setMidiendo] = useState(false);
+  const [medicionFallo, setMedicionFallo] = useState(false);
   const gradoRef = useRef(grado);
   useEffect(() => {
     gradoRef.current = grado;
@@ -167,24 +169,26 @@ export function Simulador({
       fotoRef.current = img;
       setOriginal(aDataUrl(reducir(img)));
       setGrado(null);
-      setSugerido(false);
+      setSugerencia(null);
+      setMedicionFallo(false);
       setOpciones([]);
       setElegida(0);
       setEstado("listo");
 
-      // El grado se sugiere solo; el ejecutivo lo puede cambiar. Si la respuesta llega
-      // cuando ya eligió uno, o ya cambió de foto, no se toca nada.
-      // Deja de consultar si cambió la foto o el ejecutivo ya eligió a mano.
+      // Se mide el grado. Si cambió la foto mientras tanto, la respuesta se descarta.
       const turno = ++fotoTurno.current;
       const vigente = () => turno === fotoTurno.current && !gradoRef.current;
       setMidiendo(true);
       sugerirGrado(img, pts, vigente)
-        .then((sugerencia) => {
-          if (!sugerencia || !vigente()) return;
-          setGrado(sugerencia);
-          setSugerido(true);
+        .then((g) => {
+          if (!vigente()) return;
+          setMidiendo(false);
+          if (g) setSugerencia(g);
+          else setMedicionFallo(true);
         })
-        .catch(() => {})
+        .catch(() => {
+          if (vigente()) setMedicionFallo(true);
+        })
         .finally(() => {
           if (turno === fotoTurno.current) setMidiendo(false);
         });
@@ -293,7 +297,8 @@ export function Simulador({
     setElegida(0);
     setError(null);
     setGrado(null);
-    setSugerido(false);
+    setSugerencia(null);
+    setMedicionFallo(false);
     setMidiendo(false);
     fotoTurno.current++;
     setEjecutivoId("");
@@ -321,7 +326,7 @@ export function Simulador({
   // tenga que adivinar por qué no se puede todavía.
   const faltantes = [
     !original && "la foto del paciente",
-    !grado && "el grado del caso",
+    !grado && (midiendo ? "esperar la medición del grado" : sugerencia ? "confirmar el grado" : "el grado del caso"),
     !ejecutivoId && "el nombre del ejecutivo",
     !sede && "la sucursal del paciente",
     !correoOk && "el correo del paciente",
@@ -334,6 +339,9 @@ export function Simulador({
   const actual = editando ?? siguiente;
   const ocupado = estado === "generando";
   const tituloGrado = GRADOS.find((g) => g.valor === grado)?.titulo;
+  const sedesDelEjecutivo = (ejecutivos.find((x) => x.id === ejecutivoId)?.sedes ?? []).filter(
+    (c): c is (typeof CODIGOS_SEDE)[number] => c in SEDES
+  );
 
   const abrirSelector = () => inputRef.current?.click();
   // Con dos opciones, el primer paso del resultado es elegir cuál mandar.
@@ -573,18 +581,57 @@ export function Simulador({
                 n={2}
                 estado={actual === 2 ? "actual" : grado ? "listo" : "falta"}
                 titulo="Elija qué tan separadas están las orejas"
-                resumen={tituloGrado && (sugerido ? `${tituloGrado} · sugerido por el sistema, revíselo` : tituloGrado)}
+                resumen={tituloGrado}
                 onCambiar={original && !ocupado ? () => setEditando(2) : undefined}
               >
-                {midiendo && !grado && (
-                  <p className="mb-3 flex items-center gap-2 text-[15px] text-[var(--crm-ink)]" role="status">
-                    <Sparkles className="size-4 animate-pulse text-[var(--crm-accent)]" />
-                    Midiendo las orejas para sugerir el grado. Puede elegirlo usted si no quiere esperar.
-                  </p>
+                {midiendo && (
+                  <div
+                    className="mb-3 rounded-[var(--crm-r-md)] border-2 border-[var(--crm-accent)] bg-[var(--crm-surface)] px-4 py-4"
+                    role="status"
+                  >
+                    <p className="flex items-center gap-3 text-[17px] font-medium text-[var(--crm-ink)]">
+                      <Loader2 className="size-6 animate-spin text-[var(--crm-accent)]" />
+                      Midiendo las orejas…
+                    </p>
+                    <p className="mt-1 pl-9 text-[15px] text-[var(--crm-ink-mute)]">
+                      El sistema calcula el grado. Tarda unos segundos, espere por favor.
+                    </p>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--crm-accent-tint-2)]">
+                      <div className="barra-midiendo h-full w-1/3 rounded-full bg-[var(--crm-accent)]" />
+                    </div>
+                  </div>
                 )}
-                <div className="space-y-2" role="radiogroup" aria-label="Grado del caso">
+                {sugerencia && !grado && (
+                  <div className="mb-3 rounded-[var(--crm-r-md)] border-2 border-[var(--crm-accent)] bg-[var(--crm-surface)] px-4 py-4">
+                    <p className="text-[16px] text-[var(--crm-ink)]">
+                      El sistema midió las orejas y sugiere:{" "}
+                      <span className="font-semibold">{GRADOS.find((g) => g.valor === sugerencia)?.titulo}</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGrado(sugerencia);
+                        setEditando(null);
+                      }}
+                      className="crm-btn crm-btn-primary crm-btn-lg mt-3 w-full"
+                    >
+                      <Check className="size-5" /> Confirmar grado {GRADOS.find((g) => g.valor === sugerencia)?.titulo.toLowerCase()}
+                    </button>
+                    <p className="mt-2 text-center text-[14px] text-[var(--crm-ink-mute)]">O elija otro grado abajo.</p>
+                  </div>
+                )}
+                {medicionFallo && !grado && (
+                  <p className="mb-3 text-[15px] text-[var(--crm-ink)]">No se pudo medir. Elija el grado mirando la foto.</p>
+                )}
+                <div
+                  className={`space-y-2 transition-opacity ${midiendo ? "pointer-events-none opacity-40" : ""}`}
+                  role="radiogroup"
+                  aria-label="Grado del caso"
+                  aria-disabled={midiendo}
+                >
                   {GRADOS.map((g) => {
                     const puesto = grado === g.valor;
+                    const esSugerido = sugerencia === g.valor && !grado;
                     return (
                       <button
                         key={g.valor}
@@ -593,20 +640,28 @@ export function Simulador({
                         aria-checked={puesto}
                         onClick={() => {
                           setGrado(g.valor);
-                          setSugerido(false);
                           setEditando(null);
                         }}
-                        disabled={ocupado}
+                        disabled={ocupado || midiendo}
                         className={`block w-full rounded-[var(--crm-r-md)] border-2 px-3 py-3 text-left transition-colors ${
                           puesto
                             ? "border-[var(--crm-accent)] bg-[var(--crm-accent)] text-[var(--crm-on-accent)]"
-                            : "border-[var(--crm-line-strong)] bg-[var(--crm-surface)] text-[var(--crm-ink)] hover:border-[var(--crm-accent)]"
+                            : esSugerido
+                              ? "border-[var(--crm-accent)] bg-[var(--crm-accent-tint-2)] text-[var(--crm-ink)]"
+                              : "border-[var(--crm-line-strong)] bg-[var(--crm-surface)] text-[var(--crm-ink)] hover:border-[var(--crm-accent)]"
                         }`}
                       >
                         <span className="flex items-center gap-3">
                           <DibujoGrado grado={g.valor} className="size-16 shrink-0 rounded-[10px] bg-[var(--crm-surface)] text-[var(--crm-ink)]" />
                           <span>
-                            <span className="block text-[17px] font-medium">{g.titulo}</span>
+                            <span className="block text-[17px] font-medium">
+                              {g.titulo}
+                              {esSugerido && (
+                                <span className="ml-2 rounded-md bg-[var(--crm-accent)] px-2 py-0.5 text-[12px] font-semibold text-[var(--crm-on-accent)] uppercase">
+                                  Sugerido
+                                </span>
+                              )}
+                            </span>
                             <span className={`mt-0.5 block text-[15px] ${puesto ? "text-white/85" : "text-[var(--crm-ink-mute)]"}`}>
                               {g.pie}
                             </span>
@@ -633,9 +688,10 @@ export function Simulador({
                       value={ejecutivoId}
                       onChange={(e) => {
                         setEjecutivoId(e.target.value);
-                        // La sucursal se propone con la del ejecutivo; se puede cambiar.
-                        const suya = ejecutivos.find((x) => x.id === e.target.value)?.sede;
-                        if (suya && !sede) setSede(suya);
+                        // Si el ejecutivo atiende una sola sucursal, se propone; con varias,
+                        // las suyas aparecen primero en la lista.
+                        const suyas = ejecutivos.find((x) => x.id === e.target.value)?.sedes ?? [];
+                        if (suyas.length === 1 && !sede) setSede(suyas[0]);
                       }}
                       disabled={ocupado}
                     >
@@ -664,11 +720,22 @@ export function Simulador({
                       <option value="" disabled>
                         Elija la sucursal
                       </option>
-                      {CODIGOS_SEDE.map((c) => (
-                        <option key={c} value={c}>
-                          {SEDES[c].nombre}
-                        </option>
-                      ))}
+                      {sedesDelEjecutivo.length > 0 && (
+                        <optgroup label="Sucursales del ejecutivo">
+                          {sedesDelEjecutivo.map((c) => (
+                            <option key={c} value={c}>
+                              {SEDES[c].nombre}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label={sedesDelEjecutivo.length > 0 ? "Otras sucursales" : "Sucursales"}>
+                        {CODIGOS_SEDE.filter((c) => !sedesDelEjecutivo.includes(c)).map((c) => (
+                          <option key={c} value={c}>
+                            {SEDES[c].nombre}
+                          </option>
+                        ))}
+                      </optgroup>
                     </select>
                   </Campo>
                   <Campo
