@@ -73,6 +73,9 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
 
             <section className="mt-12">
               <h2 className="text-center text-[20px] font-semibold text-[var(--crm-ink)]">Compara tu foto actual</h2>
+              <p className="mt-1 text-center text-[16px] text-[var(--crm-ink-mute)]">
+                Arrastra el control sobre la foto.
+              </p>
               <div className="mt-4">
                 <Comparador token={token} />
               </div>
