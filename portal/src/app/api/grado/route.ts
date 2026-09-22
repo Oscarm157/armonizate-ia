@@ -5,17 +5,17 @@ import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 import { serverEnv } from "@/lib/env";
 import { parseJson } from "@/lib/validate";
-import { mascaraOrejas } from "@/lib/simulador/clasificar";
+import { cajasOrejas } from "@/lib/simulador/clasificar";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 const bodySchema = z.object({
   cabeza: z.string().regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/, "Imagen inválida."),
 });
 
 /**
- * Devuelve la máscara de las orejas; el navegador mide con ella cuánto se separan y
+ * Devuelve dónde están las orejas; el navegador mide con eso cuánto se separan y
  * sugiere el grado. No cuenta contra el tope mensual: cuesta una fracción de centavo y
  * no genera imagen. Sí exige sesión y BotID, porque llama a un servicio de pago.
  */
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const { REPLICATE_API_TOKEN } = serverEnv();
-  if (!REPLICATE_API_TOKEN) return NextResponse.json({ mascara: null });
+  if (!REPLICATE_API_TOKEN) return NextResponse.json({ cajas: null });
 
-  return NextResponse.json({ mascara: await mascaraOrejas(datos.cabeza, REPLICATE_API_TOKEN) });
+  return NextResponse.json({ cajas: await cajasOrejas(datos.cabeza, REPLICATE_API_TOKEN) });
 }
