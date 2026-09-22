@@ -12,6 +12,17 @@ export const LEGAL_CUERPO =
   "como orientación de cómo podría verse el procedimiento. El resultado real depende de " +
   "la anatomía de cada persona y puede variar. La valoración la realiza el médico.";
 
+/**
+ * El mismo aviso, dicho al ejecutivo: en su pantalla no es un descargo legal, es lo que
+ * tiene que decirle al paciente al entregarle la simulación.
+ */
+export const LEGAL_EJECUTIVO_TITULO = "Recuérdele al paciente que es una simulación, no una promesa de resultado.";
+
+export const LEGAL_EJECUTIVO_CUERPO =
+  "Dígale que la imagen se generó con inteligencia artificial a partir de su fotografía y que sirve " +
+  "como orientación de cómo podría verse el procedimiento. El resultado real depende de la anatomía " +
+  "de cada persona y puede variar, y la valoración la realiza el médico.";
+
 /** El aviso impreso en las imágenes que se descargan y se reenvían (texto de la clínica). */
 export const LEGAL_IMAGEN =
   "La imagen fue generada con inteligencia artificial a partir de su fotografía y sirve " +

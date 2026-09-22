@@ -10,7 +10,7 @@ import {
 } from "@/lib/simulador/entrega";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { GRADOS, type Grado } from "@/lib/simulador/grado";
-import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
+import { LEGAL_EJECUTIVO_CUERPO, LEGAL_EJECUTIVO_TITULO } from "@/lib/legal";
 import { BotonesVista, Comparar } from "./Comparar";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
@@ -821,12 +821,12 @@ export function Simulador({
         </div>
       </div>
 
-      {/* El aviso, tal cual lo ve el paciente en el enlace. Está aquí para que el asesor
-          sepa exactamente con qué texto se entrega y no prometa de más en la conversación. */}
+      {/* Lo que el ejecutivo tiene que decirle al paciente al entregar la simulación:
+          el mismo contenido que el aviso del enlace, dicho como instrucción. */}
       <div className="crm-mesa mt-7 p-6 sm:p-8">
-        <p className="text-[16px] text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
+        <p className="text-[16px] font-medium text-[var(--crm-ink)]">{LEGAL_EJECUTIVO_TITULO}</p>
         <p className="mt-2 max-w-[70ch] text-[15px] leading-relaxed text-[var(--crm-ink-soft)]">
-          {LEGAL_CUERPO}
+          {LEGAL_EJECUTIVO_CUERPO}
         </p>
         {/* "Calibrado" y no "entrenado": el modelo que corre es nano-banana con el prompt
             ajustado contra esos casos, no el LoRA. Es cierto y se sostiene si preguntan. */}
