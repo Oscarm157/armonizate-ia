@@ -8,6 +8,7 @@ import { ejecutivos, prospectos, simulaciones } from "@/lib/schema";
 import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 import { consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
+import { CODIGOS_SEDE } from "@/lib/sedes";
 import { nuevoToken, venceEn } from "@/lib/enlace";
 import { serverEnv } from "@/lib/env";
 import { parseJson } from "@/lib/validate";
@@ -31,6 +32,8 @@ const bodySchema = z.object({
   fuerte: z.boolean().optional(),
   // Quién generó: el acceso es compartido, así que se elige de la lista al generar.
   ejecutivoId: z.string().uuid("Elija el ejecutivo."),
+  // La sucursal del paciente: de aquí sale el WhatsApp del botón en su enlace.
+  sede: z.enum(CODIGOS_SEDE as [string, ...string[]]),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -59,7 +62,7 @@ export async function POST(request: Request) {
     datos = await parseJson(bodySchema, request);
   } catch {
     return NextResponse.json(
-      { error: "Revise la fotografía, el grado, el ejecutivo, el correo y el enlace de Vambe." },
+      { error: "Revise la fotografía, el grado, el ejecutivo, la sucursal, el correo y el enlace de Vambe." },
       { status: 400 }
     );
   }
@@ -92,13 +95,14 @@ export async function POST(request: Request) {
     addRandomSuffix: true,
   });
 
-  // El prospecto se crea la primera vez que se le genera algo. La sede sale del
-  // ejecutivo, que es de donde después salen los números por plaza.
+  // El prospecto se crea la primera vez que se le genera algo. La sede es la que eligió
+  // el ejecutivo para el paciente: de ahí salen el WhatsApp del enlace y el reporte.
+  const sede = datos.sede as (typeof CODIGOS_SEDE)[number];
   const correo = datos.correo.toLowerCase();
 
   await db
     .insert(prospectos)
-    .values({ correo, vambe: datos.vambe, sede: ejecutivo.sede, userId: me.id })
+    .values({ correo, vambe: datos.vambe, sede, userId: me.id })
     .onConflictDoUpdate({ target: prospectos.correo, set: { vambe: datos.vambe } });
 
   // La fila se crea antes de llamar al modelo: lo que consume cuota es haber pedido la
@@ -110,7 +114,7 @@ export async function POST(request: Request) {
       ejecutivoId: ejecutivo.id,
       prospectoCorreo: correo,
       prospectoVambe: datos.vambe,
-      sede: ejecutivo.sede,
+      sede,
       grado: datos.grado,
       modelo: MODELO,
       antesUrl: antes.url,

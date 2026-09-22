@@ -454,3 +454,51 @@
 .crm-scroll::-webkit-scrollbar-thumb:hover {
   background: var(--crm-ink-faint);
 }
+
+/* Botón de WhatsApp de la página del paciente. Tiene que llamar la atención: brillo
+   que lo recorre, pulso suave y resplandor. Sin movimiento si el sistema lo pide. */
+.cta-reservar {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 64px;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #2fe07a 0%, #1ebe5d 100%);
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 30px -8px rgba(30, 190, 93, 0.65), inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  animation: cta-pulso 2.2s ease-in-out infinite;
+}
+.cta-reservar::after {
+  content: "";
+  position: absolute;
+  inset: -40% auto -40% -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-18deg);
+  animation: cta-brillo 2.6s ease-in-out infinite;
+}
+.cta-reservar:hover { filter: brightness(1.05); }
+.cta-reservar:focus-visible { outline: 3px solid var(--crm-ink); outline-offset: 3px; }
+@keyframes cta-pulso {
+  0%, 100% { transform: scale(1); box-shadow: 0 10px 30px -8px rgba(30, 190, 93, 0.65), inset 0 -2px 0 rgba(0, 0, 0, 0.12); }
+  50% { transform: scale(1.025); box-shadow: 0 14px 40px -6px rgba(30, 190, 93, 0.85), inset 0 -2px 0 rgba(0, 0, 0, 0.12); }
+}
+@keyframes cta-brillo {
+  0% { left: -60%; }
+  55%, 100% { left: 130%; }
+}
+/* En teléfonos angostos el texto completo cabe en una línea con letra un poco menor. */
+@media (max-width: 420px) {
+  .cta-reservar { font-size: 16.5px; gap: 0.5rem; padding: 0 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-reservar, .cta-reservar::after { animation: none; }
+}
