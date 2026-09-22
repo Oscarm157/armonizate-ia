@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 // señal valga.
 const PROTEGIDO = [
   { path: "/api/simular", method: "POST" },
+  { path: "/api/grado", method: "POST" },
   { path: "/login", method: "POST" },
 ];
 

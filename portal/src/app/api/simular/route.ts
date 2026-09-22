@@ -27,6 +27,8 @@ const bodySchema = z.object({
   vambe: z.string().trim().url("El enlace de Vambe no es válido.").max(400),
   // Sin grado no se genera: es lo que decide cuánta corrección se aplica.
   grado: z.enum(["alto", "medio", "bajo"]),
+  // La segunda opción va con más empuje: repetir el mismo prompt casi nunca mejora.
+  fuerte: z.boolean().optional(),
   // Quién generó: el acceso es compartido, así que se elige de la lista al generar.
   ejecutivoId: z.string().uuid("Elija el ejecutivo."),
 });
@@ -119,7 +121,7 @@ export async function POST(request: Request) {
     })
     .returning({ id: simulaciones.id, token: simulaciones.token });
 
-  const res = await generar(datos.cabeza, datos.grado, REPLICATE_API_TOKEN);
+  const res = await generar(datos.cabeza, datos.grado, REPLICATE_API_TOKEN, datos.fuerte);
   if ("error" in res) return NextResponse.json({ error: res.error, id: fila.id }, { status: 502 });
 
   return NextResponse.json({
