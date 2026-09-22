@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 import { serverEnv } from "@/lib/env";
 import { parseJson } from "@/lib/validate";
-import { cajasOrejas } from "@/lib/simulador/clasificar";
+import { iniciarCajas } from "@/lib/simulador/clasificar";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -15,8 +15,8 @@ const bodySchema = z.object({
 });
 
 /**
- * Devuelve dónde están las orejas; el navegador mide con eso cuánto se separan y
- * sugiere el grado. No cuenta contra el tope mensual: cuesta una fracción de centavo y
+ * Arranca la ubicación de las orejas y devuelve el id; el navegador consulta
+ * /api/grado/[id] hasta tener las cajas, mide con ellas y sugiere el grado. No cuenta contra el tope mensual: cuesta una fracción de centavo y
  * no genera imagen. Sí exige sesión y BotID, porque llama a un servicio de pago.
  */
 export async function POST(request: Request) {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const { REPLICATE_API_TOKEN } = serverEnv();
-  if (!REPLICATE_API_TOKEN) return NextResponse.json({ cajas: null });
+  if (!REPLICATE_API_TOKEN) return NextResponse.json({ id: null });
 
-  return NextResponse.json({ cajas: await cajasOrejas(datos.cabeza, REPLICATE_API_TOKEN) });
+  return NextResponse.json({ id: await iniciarCajas(datos.cabeza, REPLICATE_API_TOKEN) });
 }

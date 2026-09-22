@@ -43,20 +43,35 @@ const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Sugiere el grado midiendo la oreja: el servidor devuelve dónde están las orejas en el
  * recorte y aquí se mide cuánto sale la punta de la oreja del borde de la cara.
  */
-async function sugerirGrado(img: HTMLImageElement, pts: Parameters<typeof cajaCabeza>[0]): Promise<Grado | null> {
+async function sugerirGrado(
+  img: HTMLImageElement,
+  pts: Parameters<typeof cajaCabeza>[0],
+  vigente: () => boolean
+): Promise<Grado | null> {
   const res = await fetch("/api/grado", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ cabeza: recorteCabeza(img, pts, 0.85) }),
   });
-  const d: { cajas: number[][] | null } | null = res.ok ? await res.json() : null;
-  if (!d?.cajas) return null;
+  const inicio: { id: string | null } | null = res.ok ? await res.json() : null;
+  if (!inicio?.id) return null;
+
+  // La fila de Replicate no tiene tiempo garantizado: se consulta cada 2 s hasta 90 s.
+  let cajas: number[][] | null = null;
+  for (let i = 0; i < 45 && !cajas; i++) {
+    await new Promise((ok) => setTimeout(ok, 2000));
+    if (!vigente()) return null;
+    const d = await fetch(`/api/grado/${inicio.id}`).then((x) => (x.ok ? x.json() : { estado: "fallo" }));
+    if (d.estado === "fallo") return null;
+    if (d.estado === "listo") cajas = d.cajas;
+  }
+  if (!cajas) return null;
 
   // Los puntos de la cara, llevados a las coordenadas del recorte.
   const caja = cajaCabeza(pts, img.naturalWidth, img.naturalHeight);
   const escala = 1024 / caja.lado;
   const enRecorte = pts.map((p) => ({ x: (p.x - caja.x) * escala, y: (p.y - caja.y) * escala }));
-  return gradoPorMedida(d.cajas, enRecorte);
+  return gradoPorMedida(cajas, enRecorte);
 }
 
 /** Recorte cuadrado de la cabeza: el modelo necesita píxeles de oreja para trabajar. */
@@ -92,6 +107,8 @@ export function Simulador({
   // Si el grado lo puso el sistema y no el ejecutivo: se le dice para que lo revise.
   const [sugerido, setSugerido] = useState(false);
   const fotoTurno = useRef(0);
+  // Mientras se mide la oreja para sugerir el grado.
+  const [midiendo, setMidiendo] = useState(false);
   const gradoRef = useRef(grado);
   useEffect(() => {
     gradoRef.current = grado;
@@ -154,14 +171,20 @@ export function Simulador({
 
       // El grado se sugiere solo; el ejecutivo lo puede cambiar. Si la respuesta llega
       // cuando ya eligió uno, o ya cambió de foto, no se toca nada.
+      // Deja de consultar si cambió la foto o el ejecutivo ya eligió a mano.
       const turno = ++fotoTurno.current;
-      sugerirGrado(img, pts)
+      const vigente = () => turno === fotoTurno.current && !gradoRef.current;
+      setMidiendo(true);
+      sugerirGrado(img, pts, vigente)
         .then((sugerencia) => {
-          if (!sugerencia || turno !== fotoTurno.current || gradoRef.current) return;
+          if (!sugerencia || !vigente()) return;
           setGrado(sugerencia);
           setSugerido(true);
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          if (turno === fotoTurno.current) setMidiendo(false);
+        });
     } catch {
       setError("No fue posible abrir la fotografía.");
       setEstado("error");
@@ -267,6 +290,7 @@ export function Simulador({
     setError(null);
     setGrado(null);
     setSugerido(false);
+    setMidiendo(false);
     fotoTurno.current++;
     setEjecutivoId("");
     setCorreo("");
@@ -546,6 +570,12 @@ export function Simulador({
                 resumen={tituloGrado && (sugerido ? `${tituloGrado} · sugerido por el sistema, revíselo` : tituloGrado)}
                 onCambiar={original && !ocupado ? () => setEditando(2) : undefined}
               >
+                {midiendo && !grado && (
+                  <p className="mb-3 flex items-center gap-2 text-[15px] text-[var(--crm-ink)]" role="status">
+                    <Sparkles className="size-4 animate-pulse text-[var(--crm-accent)]" />
+                    Midiendo las orejas para sugerir el grado. Puede elegirlo usted si no quiere esperar.
+                  </p>
+                )}
                 <div className="space-y-2" role="radiogroup" aria-label="Grado del caso">
                   {GRADOS.map((g) => {
                     const puesto = grado === g.valor;
