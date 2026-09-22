@@ -1,8 +1,8 @@
 import Image from "next/image";
-import { Clock, Footprints, ShieldCheck, Sparkles, Syringe, Users } from "lucide-react";
+import { Clock, Footprints, Sparkles, Users } from "lucide-react";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
-import { enlaceWhatsApp, nombreSede } from "@/lib/sedes";
+import { enlaceWhatsApp } from "@/lib/sedes";
 import { Comparador } from "./Comparador";
 import { BotonReservar } from "./BotonReservar";
 
@@ -12,9 +12,7 @@ const VENTAJAS = [
   { texto: "60 min en consultorio", icono: Clock },
   { texto: "Ambulatorio, sin incapacidad", icono: Footprints },
   { texto: "Sin cortes ni cicatrices", icono: Sparkles },
-  { texto: "Anestesia local leve", icono: Syringe },
   { texto: "+2,500 pacientes", icono: Users },
-  { texto: "Garantía médica de 3 meses", icono: ShieldCheck },
 ];
 
 type Sim = { id: string; sede: string | null; comparativaPathname: string | null };
@@ -54,21 +52,18 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
               ¡Hola! Tu simulación está lista
             </h1>
             <p className="mx-auto mt-2 mb-5 max-w-[38ch] text-center text-[18px] leading-relaxed text-[var(--crm-ink-soft)]">
-              Así se verían tus orejas con la otomodelación. Usa los botones para comparar.
+              Así se verían tus orejas con la otomodelación.
             </p>
 
             <Comparador token={token} />
 
             <div className="mt-6">
               <BotonReservar href={whatsapp} texto="Reservar mi cupo por WhatsApp" />
-              <p className="mt-3 text-center text-[15px] text-[var(--crm-ink-mute)]">
-                Te atiende la sucursal {nombreSede(sim.sede)}
-              </p>
             </div>
 
             <section className="mt-10">
               <h2 className="text-center text-[24px] font-semibold text-[var(--crm-ink)]">Ventajas de la otomodelación</h2>
-              <ul className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+              <ul className="mt-4 grid grid-cols-2 gap-2.5">
                 {VENTAJAS.map(({ texto, icono: Icono }) => (
                   <li
                     key={texto}
