@@ -44,7 +44,7 @@ contra el holdout del otro repo.
 - Quién generó cada simulación no sale de la sesión: se elige de `ejecutivos` al generar
   (`simulaciones.ejecutivo_id`). Lo generado antes quedó sin ejecutivo, como "Administración".
   Los ejecutivos se administran en `/admin/ejecutivos`.
-- Tope global de 50 simulaciones al mes, contado en la base (`src/lib/datos.ts`).
+- Tope global de 500 simulaciones al mes, contado en la base (`src/lib/datos.ts`).
   Un rate limit en memoria no sirve: cada instancia serverless arranca su contador.
 - Vive dentro de ArmoAdmin en un iframe de ~1,090 × 660 px: navegación en barra arriba,
   no menú lateral. `frame-ancestors` en `next.config.ts`.

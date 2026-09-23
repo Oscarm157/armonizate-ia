@@ -5,7 +5,7 @@ import type { Sede } from "./sedes";
 import { SIN_EJECUTIVO } from "./ejecutivos";
 
 /** Cuántas generaciones se pueden pedir al mes entre todos. */
-export const TOPE_MENSUAL = 50;
+export const TOPE_MENSUAL = 500;
 
 /** Primer instante del mes en curso, que es donde arranca la cuota. */
 export function inicioDelMes(hoy = new Date()): Date {
