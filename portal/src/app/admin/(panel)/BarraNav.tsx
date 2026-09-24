@@ -13,7 +13,7 @@ function isActive(pathname: string, href: string) {
 // Barra arriba y no menú lateral: el portal vive dentro del panel de la clínica, que ya
 // trae su propio menú a la izquierda, y el marco mide unos 1,090 × 660 px. Sin logo por
 // lo mismo: la marca ya está en el panel que lo contiene.
-export function BarraNav({ esAdmin, logoutAction }: { esAdmin: boolean; logoutAction: () => void }) {
+export function BarraNav({ esAdmin }: { esAdmin: boolean }) {
   const pathname = usePathname();
 
   const items: Item[] = [
@@ -52,12 +52,12 @@ export function BarraNav({ esAdmin, logoutAction }: { esAdmin: boolean; logoutAc
           );
         })}
       </nav>
-      <form action={logoutAction} className="flex shrink-0 items-center gap-3">
-        <span className="text-[12px] text-[var(--crm-ink-faint)]">{esAdmin ? "Administración" : "Ejecutivo"}</span>
-        <button type="submit" className="text-[13px] text-[var(--crm-ink-mute)] underline underline-offset-4 hover:text-[var(--crm-ink)]">
-          Salir
-        </button>
-      </form>
+      {/* Sin botón de salir: el acceso es una clave compartida por todo el equipo y el
+          ejecutivo no tiene de dónde salir ni a dónde volver. Queda el rol, que sí dice
+          con qué clave se entró. */}
+      <span className="shrink-0 text-[12px] text-[var(--crm-ink-faint)]">
+        {esAdmin ? "Administración" : "Ejecutivo"}
+      </span>
     </header>
   );
 }
