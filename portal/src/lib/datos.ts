@@ -68,19 +68,26 @@ export type ProspectoConSimulaciones = {
  */
 export async function historial({
   ejecutivo,
+  userId,
   limite = 80,
-}: { ejecutivo?: string; limite?: number } = {}): Promise<ProspectoConSimulaciones[]> {
-  const filtro =
+}: { ejecutivo?: string; userId?: string; limite?: number } = {}): Promise<
+  ProspectoConSimulaciones[]
+> {
+  const porEjecutivo =
     ejecutivo === "ninguno"
       ? isNull(simulaciones.ejecutivoId)
       : ejecutivo
         ? eq(simulaciones.ejecutivoId, ejecutivo)
         : undefined;
 
+  // Con `userId` se ve solo lo generado con esa clave. Es lo que ve el ejecutivo:
+  // administración lo llama sin filtro, porque su trabajo es ver todo.
+  const porClave = userId ? eq(simulaciones.userId, userId) : undefined;
+
   const filas = await db
     .select()
     .from(simulaciones)
-    .where(filtro)
+    .where(and(porEjecutivo, porClave))
     .orderBy(desc(simulaciones.creadoEn))
     .limit(limite);
 

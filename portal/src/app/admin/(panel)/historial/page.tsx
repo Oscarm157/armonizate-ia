@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/session";
+import { isAdmin } from "@/lib/permissions";
 import { historial, consumoDelMes, listaEjecutivos, TOPE_MENSUAL } from "@/lib/datos";
 import { KeyFacts } from "@/components/crm/KeyFacts";
 import { Empty } from "@/components/states";
@@ -19,7 +20,12 @@ export default async function HistorialPage({
   const [lista, usadas] = await Promise.all([listaEjecutivos(), consumoDelMes(me.id)]);
   // El filtro viene de la dirección: solo se aplica si es un ejecutivo que existe.
   const filtro = ejecutivo === "ninguno" || lista.some((e) => e.id === ejecutivo) ? ejecutivo : "";
-  const prospectos = await historial({ ejecutivo: filtro || undefined });
+  // El ejecutivo ve solo lo generado con su clave; administración ve todo, que es para
+  // lo que existe el rol.
+  const prospectos = await historial({
+    ejecutivo: filtro || undefined,
+    userId: isAdmin(me.role) ? undefined : me.id,
+  });
 
   const ganados = prospectos.filter((p) => p.resultado === "ganado").length;
   const sinRegistrar = prospectos.filter((p) => p.resultado === "pendiente").length;
