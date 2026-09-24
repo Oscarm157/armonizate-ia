@@ -360,9 +360,9 @@ export function Simulador({
   // Con dos opciones, el primer paso del resultado es elegir cuál mandar.
   const base = opciones.length > 1 ? 1 : 0;
   const calificado = calificacion !== null;
-  // Dos estrellas o menos es el ejecutivo diciendo que no la va a mandar. El reintento
-  // deja de ser el enlace discreto del fondo y sube a donde está mirando.
-  const quedoMal = calificacion !== null && calificacion <= 2;
+  // Tres estrellas o menos es el ejecutivo diciendo que no la va a mandar así. El
+  // reintento deja de ser el enlace discreto del fondo y sube a donde está mirando.
+  const quedoMal = calificacion !== null && calificacion <= 3;
   const puedeRepetir = repeticiones < 1 && !agotado;
 
   // Al cambiar de paso, la pantalla va sola al que toca: en el celular queda debajo de
