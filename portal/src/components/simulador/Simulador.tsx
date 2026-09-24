@@ -167,6 +167,9 @@ export function Simulador({
   // petición) hacía que la entrega saliera a la resolución de entrada y no a la del
   // modelo, que genera en 2K.
   const fotoRef = useRef<HTMLImageElement | null>(null);
+  // La foto reducida, que es la que se sube y la que ve el paciente. Se guarda para
+  // poder marcarla al generar sin volver a reducir.
+  const reducidoRef = useRef<HTMLCanvasElement | null>(null);
 
   // El logo va impreso en las imágenes; se trae mientras el vendedor captura la foto.
   useEffect(() => {
@@ -199,10 +202,11 @@ export function Simulador({
         return;
       }
       fotoRef.current = img;
-      // La copia que se guarda y se le muestra al paciente va marcada. El original sin
-      // marca se queda en fotoRef: es el que ve el modelo y sobre el que se compone.
-      await precargarLogo();
-      setOriginal(aDataUrl(conMarca(reducir(img))));
+      // Aquí no se espera al logo ni se marca nada: lo que sigue es enseñar la foto y
+      // arrancar la medición del grado, y un await en medio retrasaba las dos cosas.
+      // La copia marcada se arma al generar, que es cuando hace falta.
+      reducidoRef.current = reducir(img);
+      setOriginal(aDataUrl(reducidoRef.current));
       setGrado(null);
       setSugerencia(null);
       setMedicionFallo(false);
@@ -245,12 +249,16 @@ export function Simulador({
       const pts = await detectar(img);
       if (!pts) throw new Error("No se detecta un rostro de frente en la fotografía.");
 
+      // La foto que se guarda y ve el paciente va marcada; la del modelo no.
+      await precargarLogo();
+      const actualMarcada = reducidoRef.current ? aDataUrl(conMarca(reducidoRef.current)) : original;
+
       const res = await fetch("/api/simular", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cabeza: recorteCabeza(img, pts, 0.95),
-          original,
+          original: actualMarcada,
           grado,
           fuerte: hayPrevia,
           ejecutivoId: ejecutivoId === COMO_ADMIN ? "" : ejecutivoId,
@@ -272,6 +280,7 @@ export function Simulador({
       // paciente. Las dos piezas de abajo se arman del canvas limpio, porque ellas
       // estampan su propia marca al montar el pie.
       const conLogo = conMarca(compuesta);
+      setOriginal(actualMarcada);
       const pieza = aDataUrl(soloSimulacion(compuesta), 0.85);
       const comparativa = aDataUrl(actualYSimulacion(img, compuesta), 0.85);
       const nueva: Opcion = {
@@ -353,6 +362,7 @@ export function Simulador({
     setResumenEjecutivo(null);
     setCalificacion(null);
     fotoRef.current = null;
+    reducidoRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
   };
 
