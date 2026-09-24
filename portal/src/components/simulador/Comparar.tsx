@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { RefreshCw } from "lucide-react";
 
 /**
  * Comparador de la fotografía actual contra la simulación.
@@ -109,24 +110,24 @@ export function Comparar({
   );
 }
 
-/** Los dos botones grandes para cambiar de foto: 100 = foto actual, 0 = simulación. */
-export function BotonesVista({ vista, onVista }: { vista: number; onVista: (n: number) => void }) {
+/**
+ * Un botón que alterna de foto: 100 = foto actual, 0 = simulación.
+ *
+ * Es el mismo control que ve el paciente en su enlace, y por la misma razón: dos botones
+ * lado a lado obligan a leer cuál está puesto antes de tocar. El texto dice lo que se va
+ * a ver al tocar, no lo que se está viendo.
+ */
+export function BotonVista({ vista, onVista }: { vista: number; onVista: (n: number) => void }) {
+  const enActual = vista === 100;
   return (
-    <div className="grid grid-cols-2 gap-2" role="group" aria-label="Qué foto ver">
-      {[
-        { texto: "Ver foto actual", valor: 100 },
-        { texto: "Ver simulación", valor: 0 },
-      ].map((b) => (
-        <button
-          key={b.valor}
-          type="button"
-          aria-pressed={vista === b.valor}
-          onClick={() => onVista(b.valor)}
-          className={`crm-btn crm-btn-lg ${vista === b.valor ? "crm-btn-primary" : "crm-btn-secondary"}`}
-        >
-          {b.texto}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      aria-pressed={!enActual}
+      onClick={() => onVista(enActual ? 0 : 100)}
+      className="crm-btn crm-btn-secondary crm-btn-lg w-full"
+    >
+      <RefreshCw className="size-5" />
+      {enActual ? "Ver simulación" : "Ver foto actual"}
+    </button>
   );
 }

@@ -11,12 +11,11 @@ import {
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { GRADOS, type Grado } from "@/lib/simulador/grado";
 import { LEGAL_EJECUTIVO_CUERPO, LEGAL_EJECUTIVO_TITULO } from "@/lib/legal";
-import { BotonesVista, Comparar } from "./Comparar";
+import { BotonVista, Comparar } from "./Comparar";
 import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
 import { DibujoGrado } from "./DibujoGrado";
 import { gradoPorMedida } from "@/lib/simulador/medir";
-import { CODIGOS_SEDE, SEDES } from "@/lib/sedes";
 import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
 
 type Estado = "vacio" | "listo" | "generando" | "hecho" | "error";
@@ -39,6 +38,25 @@ const GUIA = [
 ];
 
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * El enlace de Vambe tal como se guarda, o null si lo pegado no es un enlace.
+ *
+ * Le pone el "https://" cuando falta. El ejecutivo copia y pega, y según de dónde copie
+ * el enlace llega con protocolo o sin él; pedírselo es pedirle algo que no tiene por qué
+ * saber.
+ */
+function normalizarEnlace(valor: string): string | null {
+  const limpio = valor.trim();
+  if (!limpio || /\s/.test(limpio)) return null;
+  const conProtocolo = /^https?:\/\//i.test(limpio) ? limpio : `https://${limpio}`;
+  try {
+    // Un dominio de verdad lleva punto: sin esto "hola" pasaría como https://hola.
+    return new URL(conProtocolo).hostname.includes(".") ? conProtocolo : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Sugiere el grado midiendo la oreja: el servidor devuelve dónde están las orejas en el
@@ -119,8 +137,6 @@ export function Simulador({
   // Se elige en cada simulación, a propósito sin recordar el anterior: el acceso es
   // compartido y el mismo equipo lo usan varias personas.
   const [ejecutivoId, setEjecutivoId] = useState("");
-  // La sucursal decide a qué WhatsApp escribe el paciente desde su enlace.
-  const [sede, setSede] = useState("");
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
   const [copiado, setCopiado] = useState(false);
@@ -130,7 +146,7 @@ export function Simulador({
   // Cuántas lleva este ejecutivo en el mes; se le dice al terminar.
   const [resumenEjecutivo, setResumenEjecutivo] = useState<{ nombre: string; n: number } | null>(null);
   // La calificación es obligatoria: es la única medida de si el modelo está saliendo bien.
-  const [calificado, setCalificado] = useState(false);
+  const [calificacion, setCalificacion] = useState<number | null>(null);
   const [folioCopiado, setFolioCopiado] = useState(false);
   const [repeticiones, setRepeticiones] = useState(0);
   // Paso que el ejecutivo reabrió con "Cambiar"; null = el primero sin terminar.
@@ -151,8 +167,12 @@ export function Simulador({
 
   const agotado = consumo >= tope;
   const correoOk = CORREO.test(correo.trim());
-  const vambeOk = /^https?:\/\/\S+$/.test(vambe.trim());
-  const datosListos = !!ejecutivoId && !!sede && correoOk && vambeOk;
+  // Se acepta el enlace aunque venga sin "https://": el ejecutivo lo copia de Vambe y
+  // según de dónde lo copie llega con protocolo o sin él. Exigirlo apagaba el botón de
+  // generar sin decir por qué.
+  const vambeUrl = normalizarEnlace(vambe);
+  const vambeOk = !!vambeUrl;
+  const datosListos = !!ejecutivoId && correoOk && vambeOk;
   const listoParaGenerar = !!grado && datosListos;
 
   const cargar = useCallback(async (file: File) => {
@@ -223,9 +243,8 @@ export function Simulador({
           grado,
           fuerte: hayPrevia,
           ejecutivoId,
-          sede,
           correo: correo.trim(),
-          vambe: vambe.trim(),
+          vambe: vambeUrl,
         }),
       });
       // Si el servidor truena antes de responder, el cuerpo viene vacío: leerlo como
@@ -252,7 +271,7 @@ export function Simulador({
       };
       setOpciones((prev) => [...prev, nueva]);
       setElegida(opciones.length);
-      setCalificado(false);
+      setCalificacion(null);
       if (data.ejecutivo && typeof data.delEjecutivo === "number")
         setResumenEjecutivo({ nombre: data.ejecutivo, n: data.delEjecutivo });
       setYaCopio(false);
@@ -275,7 +294,7 @@ export function Simulador({
       // Si falla la segunda, la primera sigue ahí y se puede mandar.
       setEstado(hayPrevia ? "hecho" : "error");
     }
-  }, [original, grado, ejecutivoId, sede, correo, vambe, consumo, opciones.length]);
+  }, [original, grado, ejecutivoId, correo, vambe, consumo, opciones.length]);
 
   const op = opciones[elegida];
   const resultado = op?.resultado ?? null;
@@ -309,7 +328,6 @@ export function Simulador({
     setMidiendo(false);
     fotoTurno.current++;
     setEjecutivoId("");
-    setSede("");
     setCorreo("");
     setVambe("");
     setFolioCopiado(false);
@@ -318,7 +336,7 @@ export function Simulador({
     setVista(0);
     setYaCopio(false);
     setResumenEjecutivo(null);
-    setCalificado(false);
+    setCalificacion(null);
     fotoRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
   };
@@ -337,13 +355,15 @@ export function Simulador({
   const actual = editando ?? siguiente;
   const ocupado = estado === "generando";
   const tituloGrado = GRADOS.find((g) => g.valor === grado)?.titulo;
-  const sedesDelEjecutivo = (ejecutivos.find((x) => x.id === ejecutivoId)?.sedes ?? []).filter(
-    (c): c is (typeof CODIGOS_SEDE)[number] => c in SEDES
-  );
 
   const abrirSelector = () => inputRef.current?.click();
   // Con dos opciones, el primer paso del resultado es elegir cuál mandar.
   const base = opciones.length > 1 ? 1 : 0;
+  const calificado = calificacion !== null;
+  // Dos estrellas o menos es el ejecutivo diciendo que no la va a mandar. El reintento
+  // deja de ser el enlace discreto del fondo y sube a donde está mirando.
+  const quedoMal = calificacion !== null && calificacion <= 2;
+  const puedeRepetir = repeticiones < 1 && !agotado;
 
   // Al cambiar de paso, la pantalla va sola al que toca: en el celular queda debajo de
   // la foto, y al terminar de generar el enlace quedaba fuera de vista.
@@ -428,7 +448,7 @@ export function Simulador({
 
           {estado === "hecho" && (
             <div className="mt-3">
-              <BotonesVista vista={vista} onVista={setVista} />
+              <BotonVista vista={vista} onVista={setVista} />
             </div>
           )}
         </div>
@@ -462,7 +482,7 @@ export function Simulador({
               )}
 
               {opciones.length > 1 && (
-                <Paso n={1} total={4} estado="listo-abierto" titulo="Elige la opción que se ve mejor">
+                <Paso n={1} total={3} estado="listo-abierto" titulo="Elige la opción que se ve mejor">
                   <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Opción a mandar">
                     {opciones.map((o, i) => {
                       const puesta = i === elegida;
@@ -498,7 +518,7 @@ export function Simulador({
                 </Paso>
               )}
 
-              <Paso n={base + 1} total={base + 3} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copia el enlace y mándaselo al paciente por WhatsApp">
+              <Paso n={base + 1} total={base + 2} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copia el enlace y mándaselo al paciente por WhatsApp">
                 {enlace && (
                   <>
                     <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-xl w-full">
@@ -516,9 +536,9 @@ export function Simulador({
 
               <Paso
                 n={base + 2}
-                total={base + 3}
+                total={base + 2}
                 estado={calificado ? "listo-abierto" : "actual"}
-                titulo="Califica cómo quedó"
+                titulo="Califica el resultado"
               >
                 {simulacionId && (
                   <Calificar
@@ -528,7 +548,7 @@ export function Simulador({
                     etiqueta=""
                     onCalificar={async (n) => {
                       const r = await calificarSimulacion(simulacionId, n);
-                      if (!r || !("error" in r) || !r.error) setCalificado(true);
+                      if (!r || !("error" in r) || !r.error) setCalificacion(n);
                       return r;
                     }}
                   />
@@ -538,9 +558,35 @@ export function Simulador({
                     Toca las estrellas: de 1 a 5, qué tan bien quedó la simulación.
                   </p>
                 )}
+                {quedoMal && puedeRepetir && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => {
+                        setRepeticiones((n) => n + 1);
+                        generar();
+                      }}
+                      className="crm-btn crm-btn-primary crm-btn-lg w-full"
+                    >
+                      <RotateCcw className="size-5" /> Generar otra opción
+                    </button>
+                    <p className="mt-2 text-[15px] text-[var(--crm-ink-mute)]">
+                      Se queda la que ya tienes y eliges cuál mandar. Cuenta como otra
+                      simulación del mes.
+                    </p>
+                  </div>
+                )}
+                {quedoMal && !puedeRepetir && (
+                  <p className="mt-4 text-[15px] text-[var(--crm-ink)]">
+                    {agotado
+                      ? `Ya se usaron las ${tope} simulaciones de este mes.`
+                      : "Ya generaste las dos opciones de este paciente."}
+                  </p>
+                )}
               </Paso>
 
-              <Paso n={base + 3} total={base + 3} estado={yaCopio && calificado ? "actual" : "abierto"} titulo="Para otro paciente, empieza de nuevo">
+              {/* Empezar de nuevo no es un paso del caso: el caso terminó al copiar y
+                  calificar. Va suelto al final, sin número. */}
+              <div className="pt-1">
                 <button
                   onClick={reiniciar}
                   disabled={!calificado}
@@ -549,11 +595,13 @@ export function Simulador({
                   Hacer otra simulación
                 </button>
                 {!calificado && (
-                  <p className="mt-2 text-[15px] text-[var(--crm-ink)]">Pendiente: califica la simulación del paso {base + 2}.</p>
+                  <p className="mt-2 text-[15px] text-[var(--crm-ink)]">
+                    Pendiente: califica la simulación del paso {base + 2}.
+                  </p>
                 )}
-              </Paso>
+              </div>
 
-              {repeticiones < 1 && !agotado && (
+              {!quedoMal && puedeRepetir && (
                 <button
                   onClick={() => {
                     setRepeticiones((n) => n + 1);
@@ -719,13 +767,7 @@ export function Simulador({
                       id="ejecutivo"
                       className="crm-input text-[16px]!"
                       value={ejecutivoId}
-                      onChange={(e) => {
-                        setEjecutivoId(e.target.value);
-                        // Si el ejecutivo atiende una sola sucursal, se propone; con varias,
-                        // las suyas aparecen primero en la lista.
-                        const suyas = ejecutivos.find((x) => x.id === e.target.value)?.sedes ?? [];
-                        if (suyas.length === 1 && !sede) setSede(suyas[0]);
-                      }}
+                      onChange={(e) => setEjecutivoId(e.target.value)}
                       disabled={ocupado}
                     >
                       <option value="" disabled>
@@ -736,39 +778,6 @@ export function Simulador({
                           {e.nombre}
                         </option>
                       ))}
-                    </select>
-                  </Campo>
-                  <Campo
-                    id="sede"
-                    etiqueta="Sucursal del paciente"
-                    ayuda="El paciente puede escribir al WhatsApp de esta sucursal desde su enlace."
-                  >
-                    <select
-                      id="sede"
-                      className="crm-input text-[16px]!"
-                      value={sede}
-                      onChange={(e) => setSede(e.target.value)}
-                      disabled={ocupado}
-                    >
-                      <option value="" disabled>
-                        Elige la sucursal
-                      </option>
-                      {sedesDelEjecutivo.length > 0 && (
-                        <optgroup label="Sucursales del ejecutivo">
-                          {sedesDelEjecutivo.map((c) => (
-                            <option key={c} value={c}>
-                              {SEDES[c].nombre}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                      <optgroup label={sedesDelEjecutivo.length > 0 ? "Otras sucursales" : "Sucursales"}>
-                        {CODIGOS_SEDE.filter((c) => !sedesDelEjecutivo.includes(c)).map((c) => (
-                          <option key={c} value={c}>
-                            {SEDES[c].nombre}
-                          </option>
-                        ))}
-                      </optgroup>
                     </select>
                   </Campo>
                   <Campo
@@ -791,12 +800,13 @@ export function Simulador({
                     id="vambe"
                     etiqueta="Enlace del paciente en Vambe"
                     ayuda="Cópialo desde la conversación del paciente en Vambe."
-                    aviso={vambe.trim() && !vambeOk ? "Pega el enlace completo. Empieza con https://" : undefined}
+                    aviso={vambe.trim() && !vambeOk ? "Esto no parece un enlace de Vambe. Cópialo otra vez desde la conversación." : undefined}
                   >
                     <input
                       id="vambe"
                       className="crm-input text-[16px]!"
-                      type="url"
+                      type="text"
+                      inputMode="url"
                       autoComplete="off"
                       value={vambe}
                       onChange={(e) => setVambe(e.target.value)}
