@@ -6,7 +6,7 @@ import { cargarImagen, detectar } from "@/lib/simulador/landmarks";
 import { cajaCabeza } from "@/lib/simulador/geometria";
 import { componer } from "@/lib/simulador/componer";
 import {
-  aDataUrl, actualYSimulacion, descargar, precargarLogo, reducir, soloSimulacion,
+  aDataUrl, actualYSimulacion, conMarca, descargar, precargarLogo, reducir, soloSimulacion,
 } from "@/lib/simulador/entrega";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
 import { GRADOS, type Grado } from "@/lib/simulador/grado";
@@ -191,7 +191,10 @@ export function Simulador({
         return;
       }
       fotoRef.current = img;
-      setOriginal(aDataUrl(reducir(img)));
+      // La copia que se guarda y se le muestra al paciente va marcada. El original sin
+      // marca se queda en fotoRef: es el que ve el modelo y sobre el que se compone.
+      await precargarLogo();
+      setOriginal(aDataUrl(conMarca(reducir(img))));
       setGrado(null);
       setSugerencia(null);
       setMedicionFallo(false);
@@ -257,12 +260,16 @@ export function Simulador({
       const compuesta = await componer(img, generada);
       if (!compuesta) throw new Error("No se pudo ajustar el resultado sobre la foto original.");
 
+      // Marcada, como la foto actual: es la que se sirve suelta en el enlace del
+      // paciente. Las dos piezas de abajo se arman del canvas limpio, porque ellas
+      // estampan su propia marca al montar el pie.
+      const conLogo = conMarca(compuesta);
       const pieza = aDataUrl(soloSimulacion(compuesta), 0.85);
       const comparativa = aDataUrl(actualYSimulacion(img, compuesta), 0.85);
       const nueva: Opcion = {
         id: data.id ?? null,
         enlace: data.token ? `${location.origin}/s/${data.token}` : null,
-        resultado: compuesta.toDataURL("image/jpeg", 0.92),
+        resultado: aDataUrl(conLogo, 0.92),
         final: { simulacion: compuesta, actual: img },
         entregas: [
           { clave: "simulacion", titulo: "Simulación", pie: "La imagen del resultado estimado", dataUrl: pieza },
@@ -284,7 +291,7 @@ export function Simulador({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imagen: compuesta.toDataURL("image/jpeg", 0.9),
+          imagen: aDataUrl(conLogo, 0.9),
           pieza,
           comparativa,
         }),
@@ -616,17 +623,6 @@ export function Simulador({
                 )}
               </div>
 
-              {!quedoMal && puedeRepetir && (
-                <button
-                  onClick={() => {
-                    setRepeticiones((n) => n + 1);
-                    generar();
-                  }}
-                  className="mx-auto flex min-h-11 items-center gap-2 text-[15px] text-[var(--crm-ink-mute)] underline underline-offset-4"
-                >
-                  <RotateCcw className="size-4" /> No quedó bien. Generar otra opción
-                </button>
-              )}
 
               <details className="rounded-[var(--crm-r-md)] bg-[var(--crm-surface)] px-4 py-3">
                 <summary className="min-h-10 cursor-pointer py-2 text-[15px] text-[var(--crm-ink-mute)]">

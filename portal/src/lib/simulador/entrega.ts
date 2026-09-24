@@ -86,6 +86,22 @@ function marcaDeAgua(ctx: CanvasRenderingContext2D, ancho: number, alto: number)
   ctx.restore();
 }
 
+/**
+ * La misma imagen con la marca de agua encima.
+ *
+ * Es para las fotos sueltas que el paciente ve en su enlace, que se guardan tal cual y
+ * no pasan por las piezas con pie. Sin esto la simulación viajaba limpia y podía
+ * reusarse como si fuera la fotografía de un resultado real.
+ */
+export function conMarca(fuente: HTMLCanvasElement | HTMLImageElement): HTMLCanvasElement {
+  const ancho = "naturalWidth" in fuente ? fuente.naturalWidth : fuente.width;
+  const alto = "naturalHeight" in fuente ? fuente.naturalHeight : fuente.height;
+  const [c, ctx] = lienzo(ancho, alto);
+  ctx.drawImage(fuente, 0, 0, ancho, alto);
+  marcaDeAgua(ctx, ancho, alto);
+  return c;
+}
+
 function pintarPie(ctx: CanvasRenderingContext2D, ancho: number, y: number, alto: number) {
   ctx.fillStyle = INDIGO;
   ctx.fillRect(0, y, ancho, alto);
