@@ -4,7 +4,7 @@ import { ejecutivos, prospectos, simulaciones, type Ejecutivo, type Resultado, t
 import type { Sede } from "./sedes";
 import { SIN_EJECUTIVO } from "./ejecutivos";
 
-/** Cuántas generaciones se pueden pedir al mes entre todos. */
+/** Cuántas generaciones se pueden pedir al mes con una clave. */
 export const TOPE_MENSUAL = 500;
 
 /** Primer instante del mes en curso, que es donde arranca la cuota. */
@@ -13,17 +13,21 @@ export function inicioDelMes(hoy = new Date()): Date {
 }
 
 /**
- * Generaciones del mes, de todos.
+ * Generaciones del mes hechas con una clave.
  *
- * El tope es global porque el acceso es con clave compartida: un tope por persona no
- * protegería el gasto, cualquiera puede elegir cualquier nombre. Se cuenta contra la
- * base y no en memoria porque cada instancia serverless arranca su propio contador.
+ * La cuota va por clave y no por persona: con el acceso compartido, un tope por persona
+ * no protegería nada, porque cualquiera puede elegir cualquier nombre al generar. Cada
+ * clave entra como un usuario de sistema fijo (`lib/acceso.ts`), así que `userId` dice
+ * con cuál se generó: las pruebas de administración no le comen cupo a los ejecutivos.
+ *
+ * Se cuenta contra la base y no en memoria porque cada instancia serverless arranca su
+ * propio contador.
  */
-export async function consumoDelMes(): Promise<number> {
+export async function consumoDelMes(userId: string): Promise<number> {
   const rows = await db
     .select({ n: count() })
     .from(simulaciones)
-    .where(gte(simulaciones.creadoEn, inicioDelMes()));
+    .where(and(eq(simulaciones.userId, userId), gte(simulaciones.creadoEn, inicioDelMes())));
   return rows[0]?.n ?? 0;
 }
 

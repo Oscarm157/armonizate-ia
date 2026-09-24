@@ -13,10 +13,10 @@ export default async function HistorialPage({
 }: {
   searchParams: Promise<{ ejecutivo?: string }>;
 }) {
-  await requireUser();
+  const me = await requireUser();
   const { ejecutivo = "" } = await searchParams;
 
-  const [lista, usadas] = await Promise.all([listaEjecutivos(), consumoDelMes()]);
+  const [lista, usadas] = await Promise.all([listaEjecutivos(), consumoDelMes(me.id)]);
   // El filtro viene de la dirección: solo se aplica si es un ejecutivo que existe.
   const filtro = ejecutivo === "ninguno" || lista.some((e) => e.id === ejecutivo) ? ejecutivo : "";
   const prospectos = await historial({ ejecutivo: filtro || undefined });

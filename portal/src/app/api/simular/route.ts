@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { ejecutivos, prospectos, simulaciones } from "@/lib/schema";
 import { getCurrentUser } from "@/lib/session";
-import { canSimular } from "@/lib/permissions";
+import { canSimular, isAdmin } from "@/lib/permissions";
 import { consumoDelEjecutivo, consumoDelMes, TOPE_MENSUAL } from "@/lib/datos";
 import { nuevoToken, venceEn } from "@/lib/enlace";
 import { serverEnv } from "@/lib/env";
@@ -30,7 +30,9 @@ const bodySchema = z.object({
   // La segunda opción va con más empuje: repetir el mismo prompt casi nunca mejora.
   fuerte: z.boolean().optional(),
   // Quién generó: el acceso es compartido, así que se elige de la lista al generar.
-  ejecutivoId: z.string().uuid("Elige el ejecutivo."),
+  // Vacío es "Administración", y solo se acepta entrando con la clave de admin: son las
+  // pruebas, que llevan su propio conteo y no se le cargan a ningún ejecutivo.
+  ejecutivoId: z.union([z.string().uuid(), z.literal("")]),
 });
 
 function aFile(dataUrl: string, nombre: string): File {
@@ -64,15 +66,23 @@ export async function POST(request: Request) {
     );
   }
 
+  // Sin ejecutivo solo genera administración; a un ejecutivo se le sigue exigiendo.
+  if (!datos.ejecutivoId && !isAdmin(me.role))
+    return NextResponse.json({ error: "Elige un ejecutivo de la lista." }, { status: 400 });
+
   // El id viene del cliente: se comprueba contra la base que exista y siga activo.
-  const [ejecutivo] = await db
-    .select()
-    .from(ejecutivos)
-    .where(and(eq(ejecutivos.id, datos.ejecutivoId), eq(ejecutivos.activo, true)));
-  if (!ejecutivo) return NextResponse.json({ error: "Elige un ejecutivo de la lista." }, { status: 400 });
+  let ejecutivo: typeof ejecutivos.$inferSelect | null = null;
+  if (datos.ejecutivoId) {
+    const [fila] = await db
+      .select()
+      .from(ejecutivos)
+      .where(and(eq(ejecutivos.id, datos.ejecutivoId), eq(ejecutivos.activo, true)));
+    if (!fila) return NextResponse.json({ error: "Elige un ejecutivo de la lista." }, { status: 400 });
+    ejecutivo = fila;
+  }
 
   // El tope se verifica ANTES de llamar al modelo: pasado el límite no se gasta.
-  const usadas = await consumoDelMes();
+  const usadas = await consumoDelMes(me.id);
   if (usadas >= TOPE_MENSUAL) {
     return NextResponse.json(
       { error: `Se alcanzó el límite de ${TOPE_MENSUAL} simulaciones de este mes.`, usadas, tope: TOPE_MENSUAL },
@@ -96,7 +106,7 @@ export async function POST(request: Request) {
   // pregunta al ejecutivo (el enlace del paciente abre WhatsApp sin número de sucursal):
   // se toma la suya cuando atiende una sola, y si atiende varias queda sin sede, que es
   // lo único honesto. De aquí sale el corte por plaza del reporte.
-  const sede = ejecutivo.sedes.length === 1 ? ejecutivo.sedes[0] : null;
+  const sede = ejecutivo?.sedes.length === 1 ? ejecutivo.sedes[0] : null;
   const correo = datos.correo.toLowerCase();
 
   await db
@@ -110,7 +120,7 @@ export async function POST(request: Request) {
     .insert(simulaciones)
     .values({
       userId: me.id,
-      ejecutivoId: ejecutivo.id,
+      ejecutivoId: ejecutivo?.id ?? null,
       prospectoCorreo: correo,
       prospectoVambe: datos.vambe,
       sede,
@@ -133,8 +143,9 @@ export async function POST(request: Request) {
     imagen: `data:image/jpeg;base64,${res.base64}`,
     usadas: usadas + 1,
     tope: TOPE_MENSUAL,
-    // Cuántas lleva este ejecutivo en el mes: se le muestra al terminar.
-    delEjecutivo: await consumoDelEjecutivo(ejecutivo.id),
-    ejecutivo: ejecutivo.nombre,
+    // Cuántas lleva este ejecutivo en el mes: se le muestra al terminar. Generando como
+    // administración no hay a quién contárselas.
+    delEjecutivo: ejecutivo ? await consumoDelEjecutivo(ejecutivo.id) : null,
+    ejecutivo: ejecutivo?.nombre ?? null,
   });
 }

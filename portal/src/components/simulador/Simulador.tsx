@@ -103,14 +103,22 @@ function recorteCabeza(img: HTMLImageElement, pts: Parameters<typeof cajaCabeza>
   return c.toDataURL("image/jpeg", calidad);
 }
 
+/**
+ * Valor del selector cuando genera administración y no un ejecutivo. Viaja al servidor
+ * como cadena vacía, que es lo que la base guarda para "sin ejecutivo".
+ */
+const COMO_ADMIN = "ADMIN";
+
 export function Simulador({
   usadas,
   tope,
   ejecutivos,
+  esAdmin,
 }: {
   usadas: number;
   tope: number;
   ejecutivos: { id: string; nombre: string; sedes: string[] }[];
+  esAdmin: boolean;
 }) {
   const [estado, setEstado] = useState<Estado>("vacio");
   const [error, setError] = useState<string | null>(null);
@@ -245,7 +253,7 @@ export function Simulador({
           original,
           grado,
           fuerte: hayPrevia,
-          ejecutivoId,
+          ejecutivoId: ejecutivoId === COMO_ADMIN ? "" : ejecutivoId,
           correo: correo.trim(),
           vambe: vambeUrl,
         }),
@@ -789,6 +797,8 @@ export function Simulador({
                           {e.nombre}
                         </option>
                       ))}
+                      {/* Las pruebas de administración no se le cargan a nadie. */}
+                      {esAdmin && <option value={COMO_ADMIN}>Administración (pruebas)</option>}
                     </select>
                   </Campo>
                   <Campo

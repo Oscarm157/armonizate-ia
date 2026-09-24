@@ -1,4 +1,5 @@
 import { requireUser } from "@/lib/session";
+import { isAdmin } from "@/lib/permissions";
 import { consumoDelMes, listaEjecutivos, TOPE_MENSUAL } from "@/lib/datos";
 import { Simulador } from "@/components/simulador/Simulador";
 
@@ -6,9 +7,9 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Simulador", robots: { index: false } };
 
 export default async function SimuladorPage() {
-  await requireUser();
+  const me = await requireUser();
   const [usadas, ejecutivos] = await Promise.all([
-    consumoDelMes(),
+    consumoDelMes(me.id),
     listaEjecutivos({ soloActivos: true }),
   ]);
 
@@ -22,6 +23,7 @@ export default async function SimuladorPage() {
         usadas={usadas}
         tope={TOPE_MENSUAL}
         ejecutivos={ejecutivos.map((e) => ({ id: e.id, nombre: e.nombre, sedes: e.sedes }))}
+        esAdmin={isAdmin(me.role)}
       />
     </div>
   );
