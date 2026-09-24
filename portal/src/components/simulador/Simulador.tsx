@@ -518,24 +518,12 @@ export function Simulador({
                 </Paso>
               )}
 
-              <Paso n={base + 1} total={base + 2} estado={yaCopio ? "listo-abierto" : "actual"} titulo="Copia el enlace y mándaselo al paciente por WhatsApp">
-                {enlace && (
-                  <>
-                    <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-xl w-full">
-                      {copiado ? <Check className="size-5" /> : <Link2 className="size-5" />}
-                      {copiado ? "Enlace copiado" : "Copiar enlace para el paciente"}
-                    </button>
-                    <p className="mt-3 text-[16px] text-[var(--crm-ink)]">
-                      {yaCopio
-                        ? "Listo. Ahora pégalo en la conversación de WhatsApp del paciente."
-                        : `El paciente lo abre en su teléfono. Dura ${HORAS_VIGENCIA} horas.`}
-                    </p>
-                  </>
-                )}
-              </Paso>
-
+              {/* Calificar va antes de copiar, y no al final: es la única medida de si
+                  el modelo está saliendo bien, y preguntada después de mandar el enlace
+                  llega cuando el ejecutivo ya dio el caso por cerrado. Además es lo que
+                  decide si esta simulación se manda o se vuelve a generar. */}
               <Paso
-                n={base + 2}
+                n={base + 1}
                 total={base + 2}
                 estado={calificado ? "listo-abierto" : "actual"}
                 titulo="Califica el resultado"
@@ -584,8 +572,35 @@ export function Simulador({
                 )}
               </Paso>
 
-              {/* Empezar de nuevo no es un paso del caso: el caso terminó al copiar y
-                  calificar. Va suelto al final, sin número. */}
+              <Paso
+                n={base + 2}
+                total={base + 2}
+                estado={!calificado ? "falta" : yaCopio ? "listo-abierto" : "actual"}
+                titulo="Copia el enlace y mándaselo al paciente por WhatsApp"
+              >
+                {enlace && (
+                  <>
+                    <button
+                      onClick={copiarEnlace}
+                      disabled={!calificado}
+                      className="crm-btn crm-btn-primary crm-btn-xl w-full"
+                    >
+                      {copiado ? <Check className="size-5" /> : <Link2 className="size-5" />}
+                      {copiado ? "Enlace copiado" : "Copiar enlace para el paciente"}
+                    </button>
+                    <p className="mt-3 text-[16px] text-[var(--crm-ink)]">
+                      {!calificado
+                        ? `Pendiente: califica el resultado en el paso ${base + 1}.`
+                        : yaCopio
+                          ? "Listo. Ahora pégalo en la conversación de WhatsApp del paciente."
+                          : `El paciente lo abre en su teléfono. Dura ${HORAS_VIGENCIA} horas.`}
+                    </p>
+                  </>
+                )}
+              </Paso>
+
+              {/* Empezar de nuevo no es un paso del caso: el caso terminó al calificar y
+                  copiar. Va suelto al final, sin número. */}
               <div className="pt-1">
                 <button
                   onClick={reiniciar}
@@ -596,7 +611,7 @@ export function Simulador({
                 </button>
                 {!calificado && (
                   <p className="mt-2 text-[15px] text-[var(--crm-ink)]">
-                    Pendiente: califica la simulación del paso {base + 2}.
+                    Pendiente: califica el resultado en el paso {base + 1}.
                   </p>
                 )}
               </div>
