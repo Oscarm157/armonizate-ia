@@ -52,23 +52,20 @@ export function BarraNav({ esAdmin, logoutAction }: { esAdmin: boolean; logoutAc
           );
         })}
       </nav>
-      {/* El ejecutivo no tiene de dónde salir: la clave es compartida y salirse solo lo
-          deja fuera de la herramienta. Administración sí, para alternar entre las dos
-          claves al probar. */}
+      {/* Salir para los dos: con dos claves compartidas, cambiar de una a otra es lo que
+          se hace a diario, y sin salida hay que borrar la cookie a mano. */}
       <div className="flex shrink-0 items-center gap-3">
         <span className="text-[12px] text-[var(--crm-ink-faint)]">
           {esAdmin ? "Administración" : "Ejecutivo"}
         </span>
-        {esAdmin && (
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="text-[13px] text-[var(--crm-ink-mute)] underline underline-offset-4 hover:text-[var(--crm-ink)]"
-            >
-              Salir
-            </button>
-          </form>
-        )}
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="text-[13px] text-[var(--crm-ink-mute)] underline underline-offset-4 hover:text-[var(--crm-ink)]"
+          >
+            Salir
+          </button>
+        </form>
       </div>
     </header>
   );
