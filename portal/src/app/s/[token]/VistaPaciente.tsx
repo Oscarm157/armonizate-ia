@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Clock, Footprints, Infinity as Permanente, Sparkles } from "lucide-react";
 import { HORAS_VIGENCIA } from "@/lib/enlace";
-import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
+import { LEGAL_CUERPO } from "@/lib/legal";
 import { Comparador } from "./Comparador";
 import { BotonReservar } from "./BotonReservar";
 
@@ -100,8 +100,7 @@ export function VistaPaciente({ token, sim }: { token: string; sim: Sim | null }
             </div>
 
             <div className="mt-10 rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)] px-6 py-6">
-              <p className="text-[17px] font-medium text-[var(--crm-ink)]">📌 {LEGAL_TITULO}</p>
-              <p className="mt-2 text-[16px] leading-relaxed text-[var(--crm-ink-soft)]">{LEGAL_CUERPO}</p>
+              <p className="text-[16px] leading-relaxed text-[var(--crm-ink-soft)]">{LEGAL_CUERPO}</p>
             </div>
 
             <p className="mt-6 text-center text-[15px] text-[var(--crm-ink-mute)]">

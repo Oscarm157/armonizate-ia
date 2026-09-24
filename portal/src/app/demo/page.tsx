@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Comparar } from "@/components/simulador/Comparar";
-import { LEGAL_CUERPO, LEGAL_TITULO } from "@/lib/legal";
+import { LEGAL_CUERPO } from "@/lib/legal";
 
 // Es material de venta, no una simulación de nadie: no hay token ni caducidad.
 export const metadata = {
@@ -69,8 +69,7 @@ export default function Demo() {
         </section>
 
         <div className="mt-8 rounded-[var(--crm-r-lg)] border border-[var(--crm-line)] bg-[var(--crm-surface)] px-6 py-6">
-          <p className="text-[15px] font-medium text-[var(--crm-ink)]">{LEGAL_TITULO}</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-[var(--crm-ink-soft)]">{LEGAL_CUERPO}</p>
+          <p className="text-[14px] leading-relaxed text-[var(--crm-ink-soft)]">{LEGAL_CUERPO}</p>
         </div>
 
         <p className="mt-6 text-center text-[12.5px] text-[var(--crm-ink-faint)]">
