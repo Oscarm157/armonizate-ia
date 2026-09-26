@@ -68,8 +68,8 @@ patrón CRUD. Duplícala/renómbrala para tu entidad real (propiedades, producto
   cambio de contraseña. `src/lib/auth.ts`, `src/lib/session.ts`.
 - **Datos**: Drizzle + Neon (`src/lib/db.ts`, `src/lib/schema.ts`), migraciones y seed.
 - **Seguridad por default**: security headers (`next.config.ts`), validación Zod de inputs
-  (`src/lib/validate.ts`), guards en cada action/route, BotID en endpoints caros
-  (`src/app/api/expensive`). Env validado en `src/lib/env.ts`.
+  (`src/lib/validate.ts`), guards en cada action/route, BotID en los endpoints caros
+  (`src/app/api/simular`, `src/app/api/grado`). Env validado en `src/lib/env.ts`.
 - **Estados por default**: `Loading` / `Empty` / `ErrorState` (`src/components/states.tsx`) y la
   página `/admin/items` que los demuestra (loading.tsx, error.tsx, empty).
 - **Infra**: Sentry guardado por DSN, CI en GitHub Actions (tsc + lint + build), Playwright smoke.

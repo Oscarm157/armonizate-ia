@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
   const { REPLICATE_API_TOKEN } = serverEnv();
   if (!REPLICATE_API_TOKEN) {
-    console.error("[simular] falta REPLICATE_API_TOKEN");
+    console.error(JSON.stringify({ evento: "simular_sin_token" }));
     return NextResponse.json({ error: "El simulador no está configurado." }, { status: 500 });
   }
 
@@ -135,7 +135,14 @@ export async function POST(request: Request) {
     .returning({ id: simulaciones.id, token: simulaciones.token });
 
   const res = await generar(datos.cabeza, datos.grado, REPLICATE_API_TOKEN, datos.fuerte);
-  if ("error" in res) return NextResponse.json({ error: res.error, id: fila.id }, { status: 502 });
+  if ("error" in res) {
+    // La fila ya consumió cuota: sin el id aquí, un "no me generó" del ejecutivo no se puede
+    // atar a la simulación que se le cobró.
+    console.error(
+      JSON.stringify({ evento: "simular_fallo_ruta", id: fila.id, usuario: me.id, error: res.error })
+    );
+    return NextResponse.json({ error: res.error, id: fila.id }, { status: 502 });
+  }
 
   return NextResponse.json({
     id: fila.id,

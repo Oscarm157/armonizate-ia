@@ -1,21 +1,9 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
 
-// Home pública placeholder. Aquí va el sitio bespoke del cliente (construido con
-// el reference lock de Refero + DESIGN.md). El panel vive en /admin.
+// Este dominio es solo la herramienta: el sitio público de la clínica vive en otra parte
+// (clinicaarmonizate.mx, en Hostinger). La raíz manda al panel, que a su vez manda al login
+// si no hay sesión. Antes quedaba aquí la home placeholder del starter, visible para
+// cualquiera que entrara al dominio a pelo.
 export default function HomePage() {
-  return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 px-4 text-center">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Starter</h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          Sitio público del cliente. Reemplaza esta página por el diseño bespoke. El
-          panel administrativo está en <code>/admin</code>.
-        </p>
-      </div>
-      <Button asChild>
-        <Link href="/admin">Entrar al panel</Link>
-      </Button>
-    </main>
-  );
+  redirect("/admin");
 }
