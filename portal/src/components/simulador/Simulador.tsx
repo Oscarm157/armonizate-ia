@@ -16,7 +16,8 @@ import { Entregas, type Entrega } from "./Entregas";
 import { Calificar } from "./Calificar";
 import { DibujoGrado } from "./DibujoGrado";
 import { gradoPorMedida } from "@/lib/simulador/medir";
-import { calificarSimulacion } from "@/app/admin/acciones-simulacion";
+import { calificarSimulacion, simulacionesPrevias } from "@/app/admin/acciones-simulacion";
+import { fmtDateTime } from "@/lib/crm-format";
 
 type Estado = "vacio" | "listo" | "generando" | "hecho" | "error";
 
@@ -147,6 +148,10 @@ export function Simulador({
   const [ejecutivoId, setEjecutivoId] = useState("");
   const [correo, setCorreo] = useState("");
   const [vambe, setVambe] = useState("");
+  // Si el correo ya tiene simulaciones se avisa, y generar otra pide confirmarlo: sumarle
+  // una a un paciente existente es válido, pero tiene que ser a propósito.
+  const [previas, setPrevias] = useState<Awaited<ReturnType<typeof simulacionesPrevias>>>(null);
+  const [sumarConfirmado, setSumarConfirmado] = useState(false);
   const [copiado, setCopiado] = useState(false);
   // Copiar el aviso "Enlace copiado" dura 2 s; esto recuerda que ya se copió para
   // marcar el paso como LISTO y pasar el resaltado al siguiente.
@@ -184,7 +189,30 @@ export function Simulador({
   const vambeUrl = normalizarEnlace(vambe);
   const vambeOk = !!vambeUrl;
   const datosListos = !!ejecutivoId && correoOk && vambeOk;
-  const listoParaGenerar = !!grado && datosListos;
+  // Solo antes de la primera generación de esta sesión: "Generar otra opción" ya avisa
+  // que suma otra simulación.
+  const faltaConfirmar = !!previas && opciones.length === 0 && !sumarConfirmado;
+  const listoParaGenerar = !!grado && datosListos && !faltaConfirmar;
+
+  useEffect(() => {
+    if (!correoOk) return;
+    let vigente = true;
+    const t = setTimeout(() => {
+      simulacionesPrevias(correo.trim())
+        .then((r) => vigente && setPrevias(r))
+        .catch(() => {});
+    }, 400);
+    return () => {
+      vigente = false;
+      clearTimeout(t);
+    };
+  }, [correo, correoOk]);
+
+  const cambiarCorreo = (valor: string) => {
+    setCorreo(valor);
+    setPrevias(null);
+    setSumarConfirmado(false);
+  };
 
   const cargar = useCallback(async (file: File) => {
     setError(null);
@@ -352,7 +380,7 @@ export function Simulador({
     setMidiendo(false);
     fotoTurno.current++;
     setEjecutivoId("");
-    setCorreo("");
+    cambiarCorreo("");
     setVambe("");
     setFolioCopiado(false);
     setRepeticiones(0);
@@ -823,10 +851,32 @@ export function Simulador({
                       inputMode="email"
                       autoComplete="off"
                       value={correo}
-                      onChange={(e) => setCorreo(e.target.value)}
+                      onChange={(e) => cambiarCorreo(e.target.value)}
                       disabled={ocupado}
                     />
                   </Campo>
+                  {previas && opciones.length === 0 && (
+                    <div className="rounded-[var(--crm-r-md)] bg-[var(--crm-accent-tint-2)] p-4" role="status">
+                      <p className="flex items-center gap-2 text-[16px] font-semibold text-[var(--crm-accent-strong)]">
+                        <AlertCircle className="size-5 shrink-0" />
+                        Este paciente ya tiene {previas.n === 1 ? "una simulación" : `${previas.n} simulaciones`}
+                      </p>
+                      <p className="mt-1 text-[15px] text-[var(--crm-ink-soft)]">
+                        La última es del <span className="crm-num">{fmtDateTime(previas.ultima)}</span>
+                        {previas.ejecutivo ? `, de ${previas.ejecutivo}` : ", de Administración"}.
+                      </p>
+                      <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3 text-[15px] font-medium text-[var(--crm-ink)]">
+                        <input
+                          type="checkbox"
+                          className="size-5 shrink-0 accent-[var(--crm-accent)]"
+                          checked={sumarConfirmado}
+                          onChange={(e) => setSumarConfirmado(e.target.checked)}
+                          disabled={ocupado}
+                        />
+                        Sí, sumarle otra simulación a este paciente
+                      </label>
+                    </div>
+                  )}
                   <Campo
                     id="vambe"
                     etiqueta="Enlace del paciente en Vambe"
@@ -856,6 +906,11 @@ export function Simulador({
                   <Sparkles className={`size-5 ${ocupado ? "animate-pulse" : ""}`} />
                   {ocupado ? "Generando…" : "Generar simulación"}
                 </button>
+                {faltaConfirmar && !!grado && datosListos && (
+                  <p className="mt-2 text-[15px] text-[var(--crm-ink-mute)]">
+                    Confirma arriba que quieres sumarle otra simulación a este paciente.
+                  </p>
+                )}
               </Paso>
             </>
           )}

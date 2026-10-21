@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Check, Copy, ExternalLink, Link2, Maximize2, RotateCw, X } from "lucide-react";
 import { Modal } from "@/components/crm/Modal";
-import { fmtDate } from "@/lib/crm-format";
+import { fmtDate, fmtDateTime } from "@/lib/crm-format";
 import { Calificar } from "@/components/simulador/Calificar";
 import type { ProspectoConSimulaciones } from "@/lib/datos";
 import { colorEjecutivo } from "@/lib/ejecutivos";
@@ -62,11 +62,21 @@ function Tarjeta({
   const [pendiente, iniciar] = useTransition();
   const [copiado, setCopiado] = useState(false);
   const [folioCopiado, setFolioCopiado] = useState(false);
-  const ultima = prospecto.simulaciones[0];
+  // Un paciente puede tener varias simulaciones; la tarjeta muestra una a la vez, por
+  // defecto la más reciente, y las acciones de abajo son de la que está a la vista.
+  const [elegida, setElegida] = useState(0);
+  const [todas, setTodas] = useState(false);
+  const sim = prospecto.simulaciones[elegida];
+  // Con muchas (las pruebas llegan a decenas) la lista taparía la tarjeta: se muestran las
+  // más recientes y la elegida, y el resto a pedido.
+  const VISIBLES = 4;
+  const fechas = prospecto.simulaciones
+    .map((s, i) => ({ s, i }))
+    .filter(({ i }) => todas || i < VISIBLES || i === elegida);
   const et = ETIQUETA[resultado];
-  const color = colorEjecutivo(prospecto.ejecutivoId);
-  const grado = GRADOS.find((g) => g.valor === ultima.grado)?.titulo.toLowerCase();
-  const vigente = !!ultima.expiraEn && new Date(ultima.expiraEn) > new Date();
+  const color = colorEjecutivo(sim.ejecutivoId);
+  const grado = GRADOS.find((g) => g.valor === sim.grado)?.titulo.toLowerCase();
+  const vigente = !!sim.expiraEn && new Date(sim.expiraEn) > new Date();
 
   const marcar = (valor: "ganado" | "perdido") => {
     const nuevo = resultado === valor ? "pendiente" : valor;
@@ -78,14 +88,14 @@ function Tarjeta({
   };
 
   const copiarEnlace = async () => {
-    if (!ultima.token) return;
-    await navigator.clipboard.writeText(`${location.origin}/s/${ultima.token}`);
+    if (!sim.token) return;
+    await navigator.clipboard.writeText(`${location.origin}/s/${sim.token}`);
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
   };
 
   const copiarFolio = async () => {
-    await navigator.clipboard.writeText(ultima.id);
+    await navigator.clipboard.writeText(sim.id);
     setFolioCopiado(true);
     setTimeout(() => setFolioCopiado(false), 2000);
   };
@@ -94,7 +104,7 @@ function Tarjeta({
     <li className="overflow-hidden rounded-[var(--crm-r-lg)] bg-[var(--crm-surface)]">
       {/* Franja con el color del ejecutivo: se distingue de quién es cada caso sin leer. */}
       <div className="flex items-center justify-between gap-3 px-5 py-2.5" style={{ background: color.fondo, color: color.texto }}>
-        <span className="truncate text-[16px] font-semibold">{prospecto.asesor}</span>
+        <span className="truncate text-[16px] font-semibold">{sim.asesor}</span>
         {grado && (
           <span className="shrink-0 rounded-md bg-white/70 px-2.5 py-0.5 text-[14px] font-semibold">
             Grado {grado}
@@ -104,27 +114,57 @@ function Tarjeta({
       <div className="px-5 pt-3 pb-3">
         <p className="truncate text-[17px] font-medium text-[var(--crm-ink)]">{prospecto.correo}</p>
         <p className="mt-0.5 text-[15px] text-[var(--crm-ink-mute)]">
-          <span className="crm-num">{fmtDate(ultima.creadoEn)}</span>
+          <span className="crm-num">{fmtDate(sim.creadoEn)}</span>
         </p>
       </div>
 
+      {prospecto.simulaciones.length > 1 && (
+        <div className="px-5 pb-3">
+          <p className="mb-1.5 text-[14px] font-medium text-[var(--crm-ink)]">
+            {prospecto.simulaciones.length} simulaciones de este paciente
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {fechas.map(({ s, i }) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setElegida(i)}
+                aria-pressed={i === elegida}
+                className={`crm-btn min-h-10 px-3 text-[14px] ${i === elegida ? "crm-btn-primary" : "crm-btn-secondary"}`}
+              >
+                <span className="crm-num">{fmtDateTime(s.creadoEn)}</span>
+              </button>
+            ))}
+            {prospecto.simulaciones.length > VISIBLES && (
+              <button
+                type="button"
+                onClick={() => setTodas((v) => !v)}
+                className="min-h-10 px-1 text-[14px] text-[var(--crm-accent)] underline underline-offset-4"
+              >
+                {todas ? "Ver menos" : `Ver las ${prospecto.simulaciones.length}`}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
-        onClick={() => onAbrir({ id: ultima.id, correo: prospecto.correo })}
+        onClick={() => onAbrir({ id: sim.id, correo: prospecto.correo })}
         className="block w-full"
         aria-label={`Ver en grande el caso de ${prospecto.correo}`}
       >
         <span className="grid grid-cols-2 gap-px bg-[var(--crm-surface-3)]">
           {(["antes", "despues"] as const).map((cual) => (
             <span key={cual} className="relative block aspect-[3/4] bg-[var(--crm-surface-3)]">
-              {cual === "despues" && !ultima.despuesUrl ? (
+              {cual === "despues" && !sim.despuesUrl ? (
                 <span className="grid h-full place-items-center px-2 text-center text-[14px] text-[var(--crm-ink-mute)]">
                   Sin completar
                 </span>
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
-                  src={`/admin/simulaciones/${ultima.id}/${cual}`}
+                  src={`/admin/simulaciones/${sim.id}/${cual}`}
                   alt={cual === "antes" ? "Actual" : "Simulación"}
                   className="h-full w-full object-contain"
                 />
@@ -143,7 +183,7 @@ function Tarjeta({
       <div className="space-y-4 px-5 pt-2 pb-5">
         {/* El enlace es lo que se le manda al paciente, y caduca a las 24 horas. Vencido,
             el único botón es el que lo revive: nada que adivinar. */}
-        {ultima.token &&
+        {sim.token &&
           (vigente ? (
             <div>
               <button onClick={copiarEnlace} className="crm-btn crm-btn-primary crm-btn-lg w-full">
@@ -160,7 +200,7 @@ function Tarjeta({
               <button
                 onClick={() =>
                   iniciar(async () => {
-                    await reactivarEnlace(ultima.id);
+                    await reactivarEnlace(sim.id);
                   })
                 }
                 disabled={pendiente}
@@ -202,9 +242,10 @@ function Tarjeta({
         </div>
 
         <Calificar
-          valor={ultima.calificacion}
+          key={sim.id}
+          valor={sim.calificacion}
           etiqueta="Calidad de la simulación"
-          onCalificar={(n) => calificarSimulacion(ultima.id, n)}
+          onCalificar={(n) => calificarSimulacion(sim.id, n)}
         />
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[14px]">

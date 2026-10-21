@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { simulaciones } from "@/lib/schema";
+import { ejecutivos, simulaciones } from "@/lib/schema";
 import { requireUser } from "@/lib/session";
 import { canSimular } from "@/lib/permissions";
 
@@ -35,4 +35,29 @@ export async function calificarSimulacion(id: string, calificacion: number) {
 
   revalidatePath("/admin/historial");
   return { ok: true };
+}
+
+const correoSchema = z.string().trim().toLowerCase().email().max(120);
+
+/**
+ * Las simulaciones que ya tiene un paciente, para avisar antes de sumarle otra.
+ *
+ * Cuenta todas, no solo las de esta clave: el paciente es uno aunque lo haya atendido
+ * otro ejecutivo. El correo se compara en minúsculas porque así lo guarda /api/simular.
+ */
+export async function simulacionesPrevias(correo: string) {
+  const me = await requireUser();
+  if (!canSimular(me.role)) return null;
+  const datos = correoSchema.safeParse(correo);
+  if (!datos.success) return null;
+
+  const filas = await db
+    .select({ creadoEn: simulaciones.creadoEn, ejecutivo: ejecutivos.nombre })
+    .from(simulaciones)
+    .leftJoin(ejecutivos, eq(ejecutivos.id, simulaciones.ejecutivoId))
+    .where(eq(simulaciones.prospectoCorreo, datos.data))
+    .orderBy(desc(simulaciones.creadoEn));
+
+  if (!filas[0]) return null;
+  return { n: filas.length, ultima: filas[0].creadoEn, ejecutivo: filas[0].ejecutivo };
 }

@@ -52,11 +52,10 @@ export async function listaEjecutivos({ soloActivos = false } = {}): Promise<Eje
 export type ProspectoConSimulaciones = {
   correo: string;
   vambe: string | null;
-  asesor: string;
-  ejecutivoId: string | null;
   resultado: Resultado;
   sede: Sede | null;
-  simulaciones: Simulacion[];
+  // Cada simulación lleva su ejecutivo: el mismo paciente puede haber pasado por varios.
+  simulaciones: (Simulacion & { asesor: string })[];
 };
 
 /**
@@ -95,7 +94,8 @@ export async function historial({
   const nombres = new Map((await listaEjecutivos()).map((e) => [e.id, e.nombre]));
 
   const agrupado = new Map<string, ProspectoConSimulaciones>();
-  for (const s of filas) {
+  for (const fila of filas) {
+    const s = { ...fila, asesor: (fila.ejecutivoId && nombres.get(fila.ejecutivoId)) || SIN_EJECUTIVO };
     const previo = agrupado.get(s.prospectoCorreo);
     if (previo) {
       previo.simulaciones.push(s);
@@ -105,8 +105,6 @@ export async function historial({
     agrupado.set(s.prospectoCorreo, {
       correo: s.prospectoCorreo,
       vambe: p?.vambe ?? s.prospectoVambe ?? null,
-      asesor: (s.ejecutivoId && nombres.get(s.ejecutivoId)) || SIN_EJECUTIVO,
-      ejecutivoId: s.ejecutivoId,
       resultado: p?.resultado ?? "pendiente",
       sede: p?.sede ?? s.sede ?? null,
       simulaciones: [s],
