@@ -3,7 +3,8 @@
  * `whatsapp`: número de la sucursal, sin "+". Lista de canales que pasó Oscar el
  * 2026-09-22; las sedes sin canal propio usan el que comparten según clinicaarmonizate.mx
  * (Oaxaca con Guadalajara, Veracruz con Puebla, Cancún y SLP con Torreón, León con
- * Querétaro, Edomex y Metepec con el central).
+ * Querétaro, Edomex y Metepec con el central). Lima (Perú) se agregó el 2026-10-21 sin
+ * dirección ni canal: sus enlaces usan el WhatsApp central.
  */
 export const SEDES = {
   CDMX: { nombre: "Ciudad de México", direccion: "Río Nilo 88, Cuauhtémoc, 06500 CDMX", whatsapp: "5215529395810" },
@@ -20,14 +21,16 @@ export const SEDES = {
   VER: { nombre: "Veracruz", direccion: "Carlos A. Carrillo 24, Aguacatal, Xalapa Enríquez, Veracruz", whatsapp: "5212212798120" },
   MET: { nombre: "Metepec", direccion: "Plaza Mayor, Calle Leona Vicario 386, Coaxustenco, Metepec", whatsapp: "5215520919481" },
   LEO: { nombre: "León", direccion: "C. Hidalgo 717, Obregón, León de los Aldama, Gto.", whatsapp: "5215516879498" },
-} as const satisfies Record<string, { nombre: string; direccion: string; whatsapp: string }>;
+  LIM: { nombre: "Lima" },
+} as const satisfies Record<string, { nombre: string; direccion?: string; whatsapp?: string }>;
 
 /** El WhatsApp central, para enlaces sin sucursal (los generados antes de elegirla). */
 export const WHATSAPP_GENERAL = "5215520919481";
 
 /** Enlace de WhatsApp de la sucursal con el mensaje ya escrito para el paciente. */
 export function enlaceWhatsApp(sede: string | null, mensaje: string): string {
-  const numero = sede && sede in SEDES ? SEDES[sede as Sede].whatsapp : WHATSAPP_GENERAL;
+  const s = sede && sede in SEDES ? SEDES[sede as Sede] : null;
+  const numero = s && "whatsapp" in s ? s.whatsapp : WHATSAPP_GENERAL;
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 
